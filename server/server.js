@@ -1,6 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const fileUpload = require('express-fileupload');
 const { supabase } = require('./supabaseClient');
 
 dotenv.config();
@@ -10,6 +11,10 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(fileUpload({
+  useTempFiles: true,
+  tempFileDir: '/tmp/'
+}));
 
 // Routes
 app.get('/', (req, res) => {

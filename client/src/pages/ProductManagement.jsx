@@ -37,15 +37,37 @@ const ProductManagement = () => {
     setUploadStatus('Loading AI model... (This runs completely free on your device!)');
 
     try {
-      // Run AI background removal directly in the browser!
+      // 1. Try local AI background removal directly in the browser
       const blob = await imglyRemoveBackground(newProduct.imageFile);
       const url = URL.createObjectURL(blob);
 
       setNewProduct(p => ({ ...p, imagePreview: url, imageFile: null }));
       setUploadStatus('✅ Background removed successfully using local AI!');
-    } catch (error) {
-      console.error(error);
-      setUploadStatus('⚠️ Local AI removal failed. Keeping original image.');
+    } catch (localError) {
+      console.warn('Local AI removal failed, falling back to Cloudinary API...', localError);
+      setUploadStatus('⚠️ Local AI failed. Falling back to Cloudinary API...');
+      
+      try {
+        // 2. Fallback to server-side Cloudinary API
+        const token = localStorage.getItem('token');
+        const formData = new FormData();
+        formData.append('image', newProduct.imageFile);
+
+        const response = await fetch('/api/upload/image', {
+          method: 'POST',
+          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: formData,
+        });
+
+        if (!response.ok) throw new Error('Cloudinary upload failed');
+        const data = await response.json();
+
+        setNewProduct(p => ({ ...p, imagePreview: data.url, imageFile: null }));
+        setUploadStatus('✅ Background removed successfully via Cloudinary backup!');
+      } catch (cloudinaryError) {
+        console.error('Both local and Cloudinary AI failed:', cloudinaryError);
+        setUploadStatus('❌ All AI background removal methods failed. Keeping original image.');
+      }
     } finally {
       setUploading(false);
     }
