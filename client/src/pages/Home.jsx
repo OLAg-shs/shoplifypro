@@ -1,113 +1,173 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Store, TrendingUp, ShieldCheck, ArrowRight, PackageSearch } from 'lucide-react';
+import { Store, TrendingUp, ShieldCheck, ArrowRight, PackageSearch, Globe, Zap, Users } from 'lucide-react';
 
 const Home = () => {
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 0' }}>
+    <div style={{ backgroundColor: 'var(--bg-main)' }}>
       {/* Hero Section */}
       <section style={{ 
         textAlign: 'center', 
-        padding: '6rem 1rem 4rem 1rem', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center',
-        gap: '1.5rem',
+        padding: '8rem 2rem 6rem 2rem', 
+        background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)',
+        borderBottom: '1px solid var(--border-medium)'
       }}>
-        <h1 style={{ 
-          fontSize: '3.5rem', 
-          fontWeight: '800', 
-          lineHeight: '1.2',
-          margin: 0,
-          color: 'var(--text-main)',
-          maxWidth: '800px'
+        <div style={{ 
+          maxWidth: '900px', 
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '2rem'
         }}>
-          The ultimate platform to <span style={{ color: 'var(--primary)' }}>launch your online business.</span>
-        </h1>
-        
-        <p style={{ 
-          fontSize: '1.25rem', 
-          color: 'var(--text-muted)', 
-          maxWidth: '650px', 
-          lineHeight: '1.6',
-          margin: '1rem 0'
-        }}>
-          Eagle Choice provides sellers with everything needed to build a brand, manage inventory, and securely process orders on a reliable multi-vendor network.
-        </p>
-        
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <Link to="/register" className="btn btn-primary" style={{ padding: '14px 32px', fontSize: '1.1rem' }}>
-            Start Selling Free <ArrowRight size={20} style={{ marginLeft: '8px' }} />
-          </Link>
-          <Link to="/login/seller" className="btn btn-secondary" style={{ padding: '14px 32px', fontSize: '1.1rem' }}>
-            Seller Login
-          </Link>
-          <Link to="/login/buyer" className="btn btn-secondary" style={{ padding: '14px 32px', fontSize: '1.1rem' }}>
-            Track My Order
-          </Link>
+          <div style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '8px', 
+            padding: '8px 20px', 
+            background: 'white', 
+            border: '1px solid var(--border-medium)', 
+            borderRadius: '100px',
+            fontSize: '0.875rem',
+            fontWeight: '600',
+            color: 'var(--primary-accent)',
+            boxShadow: 'var(--shadow-subtle)'
+          }}>
+            <Zap size={14} />
+            The Future of Global Commerce
+          </div>
+          
+          <h1 style={{ 
+            fontSize: '4.5rem', 
+            fontWeight: '800', 
+            lineHeight: '1.1',
+            letterSpacing: '-0.04em',
+            color: 'var(--primary)',
+            margin: 0
+          }}>
+            Build your empire. <br/>
+            <span style={{ color: 'var(--primary-accent)' }}>Scale with precision.</span>
+          </h1>
+          
+          <p style={{ 
+            fontSize: '1.35rem', 
+            color: 'var(--text-muted)', 
+            maxWidth: '700px', 
+            lineHeight: '1.6',
+            margin: '0 auto'
+          }}>
+            Eagle Choice is the enterprise-grade multi-vendor platform designed for high-growth businesses. 
+            From AI storefronts to visual order tracking, we provide the tools you need to win.
+          </p>
+          
+          <div style={{ display: 'flex', gap: '1.25rem', marginTop: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <Link to="/register" className="btn btn-primary" style={{ padding: '1.1rem 2.5rem', fontSize: '1.1rem' }}>
+              Create Your Business Account <ArrowRight size={20} style={{ marginLeft: '10px' }} />
+            </Link>
+            <Link to="/login/seller" className="btn btn-secondary" style={{ padding: '1.1rem 2.5rem', fontSize: '1.1rem' }}>
+              Seller Login
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
-        gap: '2rem', 
-        marginTop: '2rem',
-        padding: '0 1rem'
-      }}>
-        {/* Feature 1 */}
-        <div className="card">
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', color: '#2563eb' }}>
-            <Store size={24} />
+      {/* Stats / Trust Bar */}
+      <section style={{ padding: '4rem 2rem', borderBottom: '1px solid var(--border-medium)' }}>
+        <div style={{ 
+          maxWidth: '1100px', 
+          margin: '0 auto',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '3rem',
+          textAlign: 'center'
+        }}>
+          <div>
+            <h2 style={{ fontSize: '2.5rem', color: 'var(--primary-accent)', marginBottom: '0.5rem' }}>$1.2B+</h2>
+            <p style={{ color: 'var(--text-muted)', fontWeight: '500' }}>Annual Transactions</p>
           </div>
-          <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>Custom Storefronts</h3>
-          <p style={{ color: 'var(--text-muted)', lineHeight: '1.6' }}>
-            Launch a fully branded, customized storefront. Manage your unique identity without writing a single line of code.
+          <div>
+            <h2 style={{ fontSize: '2.5rem', color: 'var(--primary-accent)', marginBottom: '0.5rem' }}>150k+</h2>
+            <p style={{ color: 'var(--text-muted)', fontWeight: '500' }}>Active Sellers</p>
+          </div>
+          <div>
+            <h2 style={{ fontSize: '2.5rem', color: 'var(--primary-accent)', marginBottom: '0.5rem' }}>200+</h2>
+            <p style={{ color: 'var(--text-muted)', fontWeight: '500' }}>Global Regions</p>
+          </div>
+          <div>
+            <h2 style={{ fontSize: '2.5rem', color: 'var(--primary-accent)', marginBottom: '0.5rem' }}>99.9%</h2>
+            <p style={{ color: 'var(--text-muted)', fontWeight: '500' }}>Platform Uptime</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Features */}
+      <section style={{ padding: '8rem 2rem', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: '5rem' }}>
+          <h2 style={{ fontSize: '3rem', marginBottom: '1.5rem' }}>One platform. Every tool you need.</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '1.25rem', maxWidth: '700px', margin: '0 auto' }}>
+            We've built the most comprehensive e-commerce infrastructure so you can focus on your customers.
           </p>
         </div>
 
-        {/* Feature 2 */}
-        <div className="card">
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', color: '#059669' }}>
-            <TrendingUp size={24} />
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', 
+          gap: '2.5rem'
+        }}>
+          <div className="card">
+            <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem', color: '#2563eb' }}>
+              <Globe size={28} />
+            </div>
+            <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Global Infrastructure</h3>
+            <p style={{ color: 'var(--text-muted)', lineHeight: '1.7', fontSize: '1.05rem' }}>
+              Deploy your store to our global edge network instantly. Deliver high-speed shopping experiences to customers on every continent.
+            </p>
           </div>
-          <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>Built-in Marketing</h3>
-          <p style={{ color: 'var(--text-muted)', lineHeight: '1.6' }}>
-            Generate professional advertising cards and product layouts automatically to drive traffic and increase your conversions.
-          </p>
-        </div>
 
-        {/* Feature 3 */}
-        <div className="card">
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', color: '#dc2626' }}>
-            <PackageSearch size={24} />
+          <div className="card">
+            <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem', color: '#16a34a' }}>
+              <TrendingUp size={28} />
+            </div>
+            <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Smart Analytics</h3>
+            <p style={{ color: 'var(--text-muted)', lineHeight: '1.7', fontSize: '1.05rem' }}>
+              Understand your business like never before with real-time sales tracking, customer behavior analysis, and automated reports.
+            </p>
           </div>
-          <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>Streamlined Order Management</h3>
-          <p style={{ color: 'var(--text-muted)', lineHeight: '1.6' }}>
-            Provide your buyers with a reliable order tracking system. Update fulfillment statuses in real-time from your secure dashboard.
-          </p>
+
+          <div className="card">
+            <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem', color: '#ea580c' }}>
+              <Users size={28} />
+            </div>
+            <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Multi-Vendor Control</h3>
+            <p style={{ color: 'var(--text-muted)', lineHeight: '1.7', fontSize: '1.05rem' }}>
+              Manage thousands of individual sellers seamlessly. Our platform handles the complexity of vendor payouts, permissions, and security.
+            </p>
+          </div>
         </div>
       </section>
       
-      {/* Trust Section */}
+      {/* Visual Order Tracking CTA Section */}
       <section style={{ 
-        marginTop: '6rem', 
+        padding: '10rem 2rem', 
         textAlign: 'center', 
-        padding: '5rem 2rem', 
-        background: '#ffffff', 
-        borderRadius: '24px', 
-        border: '1px solid var(--border-color)',
-        boxShadow: 'var(--shadow-sm)'
+        background: '#0f172a',
+        color: 'white',
       }}>
-        <ShieldCheck size={48} style={{ color: 'var(--primary)', marginBottom: '1.5rem', margin: '0 auto' }} />
-        <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem', marginTop: '1.5rem' }}>Secure. Reliable. Scalable.</h2>
-        <p style={{ color: 'var(--text-muted)', maxWidth: '600px', margin: '0 auto 2.5rem auto', fontSize: '1.1rem' }}>
-          Eagle Choice is built on enterprise-grade infrastructure. Your data, products, and customer transactions are fully secured.
-        </p>
-        <Link to="/register" className="btn btn-primary" style={{ padding: '14px 36px', fontSize: '1.1rem' }}>
-          Create Your Store Today
-        </Link>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <PackageSearch size={64} style={{ color: 'var(--primary-accent)', marginBottom: '2rem', margin: '0 auto' }} />
+          <h2 style={{ fontSize: '3.5rem', color: 'white', marginBottom: '1.5rem' }}>Excellence in Order Fulfillment.</h2>
+          <p style={{ color: '#94a3b8', maxWidth: '600px', margin: '0 auto 3rem auto', fontSize: '1.25rem', lineHeight: '1.6' }}>
+            Provide your buyers with a world-class tracking experience. Transparency builds trust, and trust builds your business.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+            <Link to="/login/buyer" className="btn btn-primary" style={{ padding: '1.1rem 3rem', fontSize: '1.1rem' }}>
+              Track My Orders
+            </Link>
+            <Link to="/register" className="btn btn-secondary" style={{ backgroundColor: 'transparent', color: 'white', padding: '1.1rem 3rem', fontSize: '1.1rem' }}>
+              Join the Network
+            </Link>
+          </div>
+        </div>
       </section>
     </div>
   );
