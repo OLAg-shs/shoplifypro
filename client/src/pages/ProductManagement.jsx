@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Package, Upload, Trash2, PlusCircle, ImageIcon, CheckCircle, Loader } from 'lucide-react';
-import imglyRemoveBackground from '@imgly/background-removal';
+import { removeBackground as imglyRemoveBackground } from '@imgly/background-removal';
 
 const MOCK_PRODUCTS = [
   { id: 1, name: 'Wireless Headphones Pro', price: 199.99, category: 'Electronics', stock: 25, image: null, bgRemoved: false },
