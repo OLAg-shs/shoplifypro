@@ -30,16 +30,23 @@ const Register = () => {
         body: JSON.stringify(formData)
       });
       
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Registration failed');
-      
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data));
-      
-      if (data.role === 'seller') {
-        navigate('/seller/dashboard');
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Registration failed');
+        
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data));
+        
+        if (data.role === 'seller') {
+          navigate('/seller/dashboard');
+        } else {
+          navigate('/');
+        }
       } else {
-        navigate('/');
+        const text = await response.text();
+        console.error("Server returned non-JSON response:", text);
+        throw new Error(`Server Error: ${text.substring(0, 50)}...`);
       }
     } catch (err) {
       setError(err.message);
