@@ -18,7 +18,14 @@ app.use(fileUpload({
 
 // Routes
 app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to Eagle Choice API' });
+  res.json({ 
+    status: 'online',
+    message: 'Welcome to Eagle Choice API',
+    config: {
+      supabase: !!supabase,
+      jwt: !!process.env.JWT_SECRET
+    }
+  });
 });
 
 app.use('/api/auth', require('./routes/auth'));
@@ -28,6 +35,16 @@ app.use('/api/orders', require('./routes/orders'));
 app.use('/api/agents', require('./routes/agents'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/upload', require('./routes/upload'));
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('GLOBAL ERROR:', err);
+  res.status(500).json({
+    message: 'A critical server error occurred',
+    error: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

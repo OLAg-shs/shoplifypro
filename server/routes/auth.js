@@ -13,6 +13,21 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
+    // Sanity check for environment configuration
+    if (!supabase) {
+      return res.status(500).json({ 
+        message: 'Database Configuration Error', 
+        error: 'Supabase client is not initialized. Please check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel settings.' 
+      });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({ 
+        message: 'Security Configuration Error', 
+        error: 'JWT_SECRET is not defined in Vercel settings.' 
+      });
+    }
+
     // Check if user already exists
     const { data: existingUser, error: fetchError } = await supabase
       .from('users')
