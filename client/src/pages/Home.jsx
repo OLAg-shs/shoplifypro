@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Store, TrendingUp, ShieldCheck, ArrowRight, Search, Globe, Zap, Users, Sparkles, Layout, BarChart3 } from 'lucide-react';
+import { Store, TrendingUp, ShieldCheck, ArrowRight, Search, Globe, Zap, Users, Sparkles, Layout, BarChart3, Wand2 } from 'lucide-react';
 
 const Home = () => {
   return (
