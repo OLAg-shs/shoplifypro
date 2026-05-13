@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Package, Store, ShoppingBag, DollarSign,
-  Sparkles, CreditCard, Settings, Users,
-  TrendingUp, ArrowRight, Zap, ArrowUpRight
+  TrendingUp, ArrowRight, ArrowUpRight, Clock, User
 } from 'lucide-react';
 
 const StatCard = ({ icon: Icon, label, value, trend, trendUp }) => (
-  <div className="card animate-up" style={{ padding: '2rem' }}>
+  <div className="card" style={{ padding: '2rem' }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
       <div style={{
         width: '52px',
@@ -43,120 +42,113 @@ const StatCard = ({ icon: Icon, label, value, trend, trendUp }) => (
   </div>
 );
 
-const ActionCard = ({ icon: Icon, title, description, link, color }) => (
-  <Link to={link} className="card animate-up" style={{ 
-    display: 'flex', 
-    flexDirection: 'column', 
-    gap: '1.25rem',
-    textDecoration: 'none',
-    color: 'inherit',
-    borderLeft: `4px solid ${color}`
-  }}>
-    <div style={{
-      width: '48px',
-      height: '48px',
-      borderRadius: '12px',
-      background: `${color}10`,
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      color: color
-    }}>
-      <Icon size={24} />
-    </div>
-    <div>
-      <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>{title}</h3>
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: 1.6, margin: 0 }}>{description}</p>
-    </div>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: color, fontWeight: '600', fontSize: '0.9rem', marginTop: 'auto' }}>
-      Launch Tool <ArrowRight size={16} />
-    </div>
-  </Link>
-);
-
 const SellerDashboard = () => {
-  const [stats, setStats] = useState({
+  const [stats] = useState({
     totalStores: 1,
     totalProducts: 5,
     totalOrders: 12,
     totalRevenue: 2450.00,
   });
-  const [loading, setLoading] = useState(false);
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <div className="spinner" />
-      </div>
-    );
-  }
+  const recentOrders = [
+    { id: '#ORD-9921', customer: 'Sarah Jenkins', date: '2 mins ago', amount: '$129.00', status: 'Processing' },
+    { id: '#ORD-9920', customer: 'Michael Chen', date: '45 mins ago', amount: '$45.50', status: 'Shipped' },
+    { id: '#ORD-9919', customer: 'Emma Wilson', date: '3 hours ago', amount: '$210.00', status: 'Processing' },
+  ];
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '3rem 2rem' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
       {/* Welcome Header */}
-      <div className="animate-up" style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <div style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Dashboard Overview</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Manage your business operations and AI tools.</p>
+          <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Business Overview</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Your multi-vendor operations are performing optimally.</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
-          <button className="btn btn-secondary">Download Report</button>
-          <Link to="/products/manage" className="btn btn-primary">+ Add Product</Link>
+          <button className="btn btn-secondary">Export Data</button>
+          <Link to="/products/manage" className="btn btn-primary">+ New Product</Link>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '2rem', marginBottom: '4rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>
         <StatCard icon={DollarSign} label="Net Revenue" value={`$${stats.totalRevenue.toLocaleString()}`} trend="+12.5%" trendUp={true} />
         <StatCard icon={ShoppingBag} label="Total Orders" value={stats.totalOrders} trend="+4" trendUp={true} />
-        <StatCard icon={Package} label="Products" value={stats.totalProducts} trend="Stable" trendUp={true} />
+        <StatCard icon={Package} label="Total Products" value={stats.totalProducts} trend="Stable" trendUp={true} />
         <StatCard icon={Store} label="Active Stores" value={stats.totalStores} />
       </div>
 
-      {/* AI Tools Section */}
-      <div className="animate-up" style={{ marginBottom: '4rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '2rem' }}>
-          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--primary-accent)', boxShadow: '0 0 12px var(--primary-accent)' }}></div>
-          <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Business Optimization Tools</h2>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem' }}>
-          <ActionCard 
-            icon={Sparkles} 
-            title="AI Store Builder" 
-            description="Our neural engine generates high-converting storefronts based on your brand description." 
-            link="/store-builder" 
-            color="#6366f1"
-          />
-          <ActionCard 
-            icon={CreditCard} 
-            title="Ad Card Engine" 
-            description="Design professional, viral-ready advertising cards for your products in a single click." 
-            link="/card-generator" 
-            color="#ec4899"
-          />
-          <ActionCard 
-            icon={Settings} 
-            title="Operations Manager" 
-            description="Control inventory, manage orders, and optimize your multi-vendor supply chain." 
-            link="/products/manage" 
-            color="#2563eb"
-          />
-        </div>
-      </div>
-
-      {/* Quick Actions / Integration Status */}
-      <div className="card animate-up" style={{ padding: '3rem', background: 'var(--primary)', color: 'white', border: 'none' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '2rem' }}>
-          <div>
-            <h2 style={{ color: 'white', fontSize: '2rem', marginBottom: '1rem' }}>Ready to expand?</h2>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.1rem', maxWidth: '500px' }}>
-              Connect your existing Shopify or WooCommerce stores to Eagle Choice and manage everything from a single unified dashboard.
-            </p>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '2rem' }}>
+        {/* Recent Orders List */}
+        <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+          <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid var(--border-medium)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '1.25rem', margin: 0 }}>Recent Orders</h3>
+            <Link to="/orders/tracking" style={{ color: 'var(--primary-accent)', textDecoration: 'none', fontWeight: '600', fontSize: '0.9rem' }}>View All</Link>
           </div>
-          <button className="btn btn-primary" style={{ background: 'white', color: 'var(--primary)', padding: '1.25rem 3rem', fontSize: '1.1rem' }}>
-            Connect Integration
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {recentOrders.map((order, idx) => (
+              <div key={order.id} style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1.2fr 1.5fr 1fr 1fr auto',
+                alignItems: 'center',
+                padding: '1.25rem 2rem',
+                borderBottom: idx === recentOrders.length - 1 ? 'none' : '1px solid var(--border-medium)',
+                gap: '1rem'
+              }}>
+                <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>{order.id}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <User size={16} color="var(--text-muted)" />
+                  </div>
+                  <span style={{ fontWeight: '500' }}>{order.customer}</span>
+                </div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  <Clock size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                  {order.date}
+                </div>
+                <div style={{ fontWeight: '700' }}>{order.amount}</div>
+                <div>
+                  <span style={{ 
+                    padding: '4px 10px', 
+                    borderRadius: '100px', 
+                    fontSize: '0.75rem', 
+                    fontWeight: '700',
+                    background: order.status === 'Shipped' ? '#ecfdf5' : '#eff6ff',
+                    color: order.status === 'Shipped' ? '#059669' : '#2563eb'
+                  }}>
+                    {order.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick Insights */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <div className="card" style={{ background: 'var(--primary)', color: 'white', border: 'none' }}>
+            <h3 style={{ color: 'white', fontSize: '1.25rem', marginBottom: '1rem' }}>Pro Plan Feature</h3>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+              Unlock advanced AI analytics and multi-region shipping controls by upgrading to the Eagle Pro plan today.
+            </p>
+            <button className="btn btn-primary" style={{ background: 'white', color: 'var(--primary)', width: '100%' }}>
+              Upgrade Now
+            </button>
+          </div>
+
+          <div className="card">
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Platform Status</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>API Connectivity</span>
+                <span style={{ color: '#10b981', fontWeight: 700, fontSize: '0.85rem' }}>OPERATIONAL</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Store Builder Engine</span>
+                <span style={{ color: '#10b981', fontWeight: 700, fontSize: '0.85rem' }}>OPERATIONAL</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -1,197 +1,164 @@
 import React, { useState } from 'react';
-import { Sparkles, Palette, LayoutTemplate, Save, Edit3 } from 'lucide-react';
+import { Sparkles, Palette, Save, Layout, Smartphone, Monitor, Wand2, CheckCircle2, ChevronRight } from 'lucide-react';
 
 const StoreBuilder = () => {
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [previewMode, setPreviewMode] = useState('desktop');
   const [storeTheme, setStoreTheme] = useState({
-    name: 'My Custom Store',
-    primaryColor: '#6366f1',
-    secondaryColor: '#ec4899',
+    name: 'Neo Premium Store',
+    primaryColor: '#0f172a',
     backgroundColor: '#ffffff',
-    textColor: '#1f2937',
-    fontFamily: 'system-ui',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
     layoutStyle: 'modern'
   });
 
   const handleGenerate = async (e) => {
     e.preventDefault();
     if (!prompt) return;
-    
     setIsGenerating(true);
     
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/ai/generate-theme', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ prompt }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setStoreTheme(data.theme);
-      } else {
-        throw new Error('API unavailable');
-      }
-    } catch {
-      // Graceful local fallback if API is not running
+    // Simulate AI generation time for UX
+    setTimeout(() => {
       const lower = prompt.toLowerCase();
-      const isDark    = lower.includes('dark') || lower.includes('gaming') || lower.includes('night');
-      const isLuxury  = lower.includes('luxury') || lower.includes('elegant') || lower.includes('gold');
-      const isNature  = lower.includes('organic') || lower.includes('eco') || lower.includes('green');
-      const isBold    = lower.includes('sport') || lower.includes('energy') || lower.includes('fitness');
-
-      let theme = {
-        name: prompt.split(' ').slice(0, 3).join(' ') + ' Store',
-        primaryColor: '#6366f1', secondaryColor: '#ec4899',
-        backgroundColor: '#ffffff', textColor: '#1f2937',
-        fontFamily: 'Inter, sans-serif', layoutStyle: 'modern',
-      };
-
-      if (isDark)    theme = { ...theme, primaryColor: '#8b5cf6', secondaryColor: '#06b6d4', backgroundColor: '#0f172a', textColor: '#f8fafc' };
-      else if (isLuxury)  theme = { ...theme, primaryColor: '#d4af37', secondaryColor: '#92400e', backgroundColor: '#fafaf9', textColor: '#1c1917', fontFamily: 'serif' };
-      else if (isNature)  theme = { ...theme, primaryColor: '#16a34a', secondaryColor: '#a3e635', backgroundColor: '#f0fdf4', textColor: '#14532d' };
-      else if (isBold)    theme = { ...theme, primaryColor: '#dc2626', secondaryColor: '#ea580c' };
-
-      setStoreTheme(theme);
-    } finally {
+      let newTheme = { ...storeTheme };
+      
+      if (lower.includes('dark')) {
+        newTheme = { ...newTheme, primaryColor: '#2563eb', backgroundColor: '#0f172a', textColor: '#f8fafc' };
+      } else if (lower.includes('luxury')) {
+        newTheme = { ...newTheme, primaryColor: '#b45309', backgroundColor: '#fafaf9', fontFamily: 'serif' };
+      }
+      
+      setStoreTheme(newTheme);
       setIsGenerating(false);
-    }
-  };
-
-  const handleColorChange = (key, value) => {
-    setStoreTheme(prev => ({ ...prev, [key]: value }));
+    }, 1500);
   };
 
   return (
-    <div className="customizer-layout">
-      {/* Controls Sidebar */}
-      <div className="glass-panel" style={{ overflowY: 'auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-          <Sparkles className="gradient-text" />
-          <h2 style={{ margin: 0 }}>AI Store Builder</h2>
+    <div className="customizer-layout animate-up">
+      {/* Settings Panel */}
+      <div className="sidebar" style={{ width: '400px', height: 'auto', minHeight: 'calc(100vh - 72px)' }}>
+        <div style={{ marginBottom: '2.5rem' }}>
+          <div style={{ display: 'inline-flex', padding: '6px 12px', background: '#f5f3ff', color: '#7c3aed', borderRadius: '100px', fontSize: '0.75rem', fontWeight: '800', marginBottom: '1rem', border: '1px solid #ddd6fe' }}>
+            <Sparkles size={12} style={{ marginRight: '6px' }} /> AI GENERATIVE ENGINE
+          </div>
+          <h2 style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>Store Builder</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>Describe your vision and watch the AI craft your storefront.</p>
         </div>
-        
-        <form onSubmit={handleGenerate} className="input-group">
-          <label>Describe your dream store</label>
+
+        <form onSubmit={handleGenerate} className="form-group">
+          <label>Design Prompt</label>
           <textarea 
             className="input-field" 
-            rows="3" 
-            placeholder="E.g., A dark-themed gaming store with neon accents..."
+            rows="4" 
+            placeholder="E.g. A minimalist furniture store with high-end typography and soft earth tones..."
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
+            style={{ marginBottom: '1rem' }}
           ></textarea>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '10px' }} disabled={isGenerating}>
-            {isGenerating ? <div className="spinner" style={{width: 20, height: 20, borderWidth: 2}}></div> : 'Generate Store'}
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', height: '52px' }} disabled={isGenerating}>
+            {isGenerating ? <Loader size={20} className="spinner" /> : <><Wand2 size={18} /> Generate Storefront</>}
           </button>
         </form>
 
-        <hr style={{ borderColor: 'var(--glass-border)', margin: '20px 0' }} />
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
-          <Palette size={20} />
-          <h3 style={{ margin: 0 }}>Live Customizer</h3>
-        </div>
-
-        <div className="input-group">
-          <label>Store Name</label>
-          <input 
-            type="text" 
-            className="input-field" 
-            value={storeTheme.name}
-            onChange={(e) => handleColorChange('name', e.target.value)}
-          />
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-          <div className="input-group">
-            <label>Primary</label>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input 
-                type="color" 
-                value={storeTheme.primaryColor}
-                onChange={(e) => handleColorChange('primaryColor', e.target.value)}
-              />
-              <span style={{ fontSize: '0.8rem' }}>{storeTheme.primaryColor}</span>
-            </div>
+        <div style={{ margin: '2rem 0', borderTop: '1px solid var(--border-medium)', paddingTop: '2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.5rem' }}>
+            <Palette size={18} style={{ color: 'var(--primary-accent)' }} />
+            <h3 style={{ fontSize: '1.1rem', margin: 0 }}>Visual Adjustments</h3>
           </div>
-          <div className="input-group">
-            <label>Background</label>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input 
-                type="color" 
-                value={storeTheme.backgroundColor}
-                onChange={(e) => handleColorChange('backgroundColor', e.target.value)}
-              />
+
+          <div className="form-group">
+            <label>Brand Name</label>
+            <input type="text" className="input-field" value={storeTheme.name} onChange={(e) => setStoreTheme({...storeTheme, name: e.target.value})} />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="form-group">
+              <label>Accent Color</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input type="color" value={storeTheme.primaryColor} onChange={(e) => setStoreTheme({...storeTheme, primaryColor: e.target.value})} style={{ width: '40px', height: '40px', padding: '0', border: 'none', background: 'none', cursor: 'pointer' }} />
+                <span style={{ fontSize: '0.8rem', fontWeight: '600' }}>{storeTheme.primaryColor}</span>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Background</label>
+              <input type="color" value={storeTheme.backgroundColor} onChange={(e) => setStoreTheme({...storeTheme, backgroundColor: e.target.value})} style={{ width: '40px', height: '40px', padding: '0', border: 'none', background: 'none', cursor: 'pointer' }} />
             </div>
           </div>
         </div>
 
-        <button className="btn btn-secondary" style={{ width: '100%', marginTop: '20px' }}>
-          <Save size={18} /> Save Theme
-        </button>
-      </div>
-
-      {/* Live Preview Area */}
-      <div className="preview-area" style={{
-        backgroundColor: storeTheme.backgroundColor,
-        color: storeTheme.textColor,
-        fontFamily: storeTheme.fontFamily,
-        transition: 'all 0.4s ease'
-      }}>
-        {/* Mock Store Header */}
-        <header style={{ padding: '20px 40px', borderBottom: `1px solid ${storeTheme.textColor}20`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ color: storeTheme.primaryColor, margin: 0, fontWeight: 800 }}>{storeTheme.name}</h2>
-          <nav style={{ display: 'flex', gap: '20px' }}>
-            <span style={{ cursor: 'pointer' }}>Home</span>
-            <span style={{ cursor: 'pointer' }}>Catalog</span>
-            <span style={{ cursor: 'pointer' }}>Contact</span>
-          </nav>
-        </header>
-
-        {/* Mock Hero Section */}
-        <div style={{ padding: '80px 40px', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-          <h1 style={{ fontSize: '3rem', marginBottom: '20px' }}>Welcome to {storeTheme.name}</h1>
-          <p style={{ fontSize: '1.2rem', opacity: 0.8, maxWidth: '600px', marginBottom: '40px' }}>
-            This is a live preview of your generated storefront. Try changing the colors on the left to see instant updates!
-          </p>
-          <button style={{
-            background: storeTheme.primaryColor,
-            color: '#fff',
-            border: 'none',
-            padding: '15px 30px',
-            borderRadius: '8px',
-            fontSize: '1.1rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            boxShadow: `0 4px 15px ${storeTheme.primaryColor}50`
-          }}>
-            Shop Now
+        <div style={{ marginTop: 'auto' }}>
+          <button className="btn btn-primary" style={{ width: '100%', height: '52px' }}>
+            <Save size={18} /> Publish to Live
           </button>
         </div>
+      </div>
 
-        {/* Mock Products Grid */}
-        <div style={{ padding: '40px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '30px' }}>
-          {[1,2,3].map(i => (
-            <div key={i} style={{ 
-              border: `1px solid ${storeTheme.textColor}20`,
-              borderRadius: '12px',
-              padding: '20px',
-              textAlign: 'center'
-            }}>
-              <div style={{ width: '100%', height: '150px', background: `${storeTheme.primaryColor}20`, borderRadius: '8px', marginBottom: '15px' }}></div>
-              <h4 style={{ margin: '0 0 10px 0' }}>Product {i}</h4>
-              <p style={{ fontWeight: 'bold', color: storeTheme.primaryColor }}>$99.00</p>
+      {/* Canvas Area */}
+      <div className="preview-area">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', alignItems: 'center' }}>
+          {/* Device Toggles */}
+          <div style={{ background: 'white', padding: '6px', borderRadius: '100px', display: 'flex', gap: '4px', border: '1px solid var(--border-medium)', boxShadow: 'var(--shadow-subtle)' }}>
+            <button onClick={() => setPreviewMode('desktop')} style={{ background: previewMode === 'desktop' ? '#f1f5f9' : 'transparent', border: 'none', padding: '8px 16px', borderRadius: '100px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: previewMode === 'desktop' ? 'var(--primary)' : 'var(--text-muted)', fontWeight: '600' }}>
+              <Monitor size={16} /> Desktop
+            </button>
+            <button onClick={() => setPreviewMode('mobile')} style={{ background: previewMode === 'mobile' ? '#f1f5f9' : 'transparent', border: 'none', padding: '8px 16px', borderRadius: '100px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: previewMode === 'mobile' ? 'var(--primary)' : 'var(--text-muted)', fontWeight: '600' }}>
+              <Smartphone size={16} /> Mobile
+            </button>
+          </div>
+
+          {/* Virtual Device */}
+          <div style={{ 
+            width: previewMode === 'desktop' ? '100%' : '375px', 
+            maxWidth: '1000px',
+            height: '800px', 
+            background: storeTheme.backgroundColor, 
+            borderRadius: '20px', 
+            boxShadow: 'var(--shadow-premium)', 
+            overflowY: 'auto',
+            border: '1px solid var(--border-medium)',
+            transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}>
+            {/* Store UI */}
+            <nav style={{ padding: '24px 40px', borderBottom: `1px solid ${storeTheme.primaryColor}20`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ color: storeTheme.primaryColor, margin: 0, fontWeight: 800, fontSize: '1.25rem' }}>{storeTheme.name}</h2>
+              <div style={{ display: 'flex', gap: '24px', fontSize: '0.9rem', fontWeight: '600' }}>
+                <span>Collection</span>
+                <span>Story</span>
+                <span>Support</span>
+              </div>
+            </nav>
+
+            <section style={{ padding: '120px 40px', textAlign: 'center' }}>
+              <h1 style={{ fontSize: '4rem', fontWeight: '800', letterSpacing: '-0.04em', lineHeight: '1.1', marginBottom: '24px', color: storeTheme.primaryColor }}>
+                Redefining <br/> Quality.
+              </h1>
+              <p style={{ fontSize: '1.25rem', opacity: 0.7, maxWidth: '600px', margin: '0 auto 40px auto' }}>
+                Discover our curated collection of premium essentials designed for the modern lifestyle.
+              </p>
+              <button style={{ background: storeTheme.primaryColor, color: 'white', padding: '16px 40px', borderRadius: '100px', border: 'none', fontSize: '1.1rem', fontWeight: '700', cursor: 'pointer' }}>
+                Explore Collection
+              </button>
+            </section>
+
+            <div style={{ padding: '0 40px 80px 40px', display: 'grid', gridTemplateColumns: previewMode === 'desktop' ? 'repeat(3, 1fr)' : '1fr', gap: '32px' }}>
+              {[1,2,3].map(i => (
+                <div key={i} style={{ textAlign: 'left' }}>
+                  <div style={{ width: '100%', height: '300px', background: '#f8fafc', borderRadius: '16px', marginBottom: '16px' }}></div>
+                  <h4 style={{ fontSize: '1.1rem', marginBottom: '4px' }}>Essential Item 0{i}</h4>
+                  <p style={{ fontWeight: '800', fontSize: '1.2rem', color: storeTheme.primaryColor }}>$149.00</p>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
+const Loader = ({ size, className }) => (
+  <div className={className} style={{ width: size, height: size, border: '3px solid #e2e8f0', borderTopColor: 'var(--primary-accent)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+);
 
 export default StoreBuilder;
