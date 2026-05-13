@@ -31,9 +31,9 @@ const LoginSeller = () => {
 
   return (
     <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-      <div className="glass-panel" style={{ maxWidth: '400px', width: '100%', padding: '3rem 2rem', textAlign: 'center', borderTop: '4px solid #6366f1' }}>
+      <div className="auth-box">
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-          <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>
+          <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
             <Store size={32} />
           </div>
         </div>
@@ -51,13 +51,13 @@ const LoginSeller = () => {
             <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Password</label>
             <input type="password" name="password" className="input-field" value={formData.password} onChange={handleChange} required />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)', border: 'none' }} disabled={loading}>
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px' }} disabled={loading}>
             {loading ? 'Authenticating...' : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Access Dashboard <ArrowRight size={18} style={{ marginLeft: '8px' }} /></span>}
           </button>
         </form>
         
         <p style={{ marginTop: '2rem', color: 'var(--text-muted)' }}>
-          Want to become a seller? <Link to="/register" style={{ color: '#818cf8', textDecoration: 'none' }}>Apply here</Link>
+          Want to become a seller? <Link to="/register" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: '500' }}>Apply here</Link>
         </p>
         <p style={{ marginTop: '1rem', fontSize: '0.9rem' }}>
           <Link to="/login/buyer" style={{ color: 'var(--text-muted)', textDecoration: 'underline' }}>I am a buyer</Link>

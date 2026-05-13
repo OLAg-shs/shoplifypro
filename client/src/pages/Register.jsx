@@ -26,7 +26,7 @@ const Register = () => {
     setError('');
     
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -113,6 +113,7 @@ const Register = () => {
                   value="buyer"
                   checked={formData.role === 'buyer'}
                   onChange={handleChange}
+                  style={{ marginRight: '8px' }}
                 />
                 Buyer
               </label>
@@ -123,17 +124,18 @@ const Register = () => {
                   value="seller"
                   checked={formData.role === 'seller'}
                   onChange={handleChange}
+                  style={{ marginRight: '8px' }}
                 />
-                Seller (requires admin verification)
+                Seller (Business Account)
               </label>
             </div>
           </div>
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Creating account...' : 'Register'}
+            {loading ? 'Creating account...' : 'Create Account'}
           </button>
         </form>
         <p className="auth-footer">
-          Already have an account? <Link to="/login">Login here</Link>
+          Already have an account? <Link to="/login/buyer">Login here</Link>
         </p>
       </div>
     </div>

@@ -1,10 +1,42 @@
-import React from 'react';
-import { Link, NavLink } from 'react-router-dom';
-import { Zap } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { ShoppingBag } from 'lucide-react';
 
 const Header = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check auth state on every route change
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    
+    if (token && userStr) {
+      setIsAuthenticated(true);
+      try {
+        const user = JSON.parse(userStr);
+        setUserRole(user.role);
+      } catch (e) {
+        setUserRole(null);
+      }
+    } else {
+      setIsAuthenticated(false);
+      setUserRole(null);
+    }
+  }, [location]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setIsAuthenticated(false);
+    setUserRole(null);
+    navigate('/');
+  };
+
   const navStyle = ({ isActive }) => ({
-    color: isActive ? 'white' : 'var(--text-muted)',
+    color: isActive ? 'var(--primary)' : 'var(--text-muted)',
     textDecoration: 'none',
     fontWeight: isActive ? 600 : 500,
     transition: 'color 0.2s ease',
@@ -14,67 +46,45 @@ const Header = () => {
   return (
     <nav>
       {/* Logo */}
-      <Link
-        to="/"
-        className="logo"
-        style={{
-          background: 'var(--gradient-brand)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          textDecoration: 'none',
-        }}
-      >
-        <Zap size={20} style={{ color: '#6366f1' }} />
+      <Link to="/" className="logo" style={{ color: 'var(--text-main)' }}>
+        <ShoppingBag size={22} style={{ color: 'var(--primary)' }} />
         Eagle Choice
       </Link>
 
       {/* Nav Links */}
       <div className="nav-links">
         <NavLink to="/" end style={navStyle}>Home</NavLink>
-        <NavLink to="/seller/dashboard" style={navStyle}>Dashboard</NavLink>
-        <NavLink to="/store-builder" style={navStyle}>Store Builder</NavLink>
-        <NavLink to="/card-generator" style={navStyle}>Ad Cards</NavLink>
-        <NavLink to="/products/manage" style={navStyle}>Products</NavLink>
-        <NavLink to="/orders/tracking" style={navStyle}>Orders</NavLink>
+        
+        {/* Only show these if logged in */}
+        {isAuthenticated && userRole === 'seller' && (
+          <>
+            <NavLink to="/seller/dashboard" style={navStyle}>Dashboard</NavLink>
+            <NavLink to="/store-builder" style={navStyle}>Store Builder</NavLink>
+            <NavLink to="/card-generator" style={navStyle}>Ad Cards</NavLink>
+            <NavLink to="/products/manage" style={navStyle}>Products</NavLink>
+          </>
+        )}
+        
+        {isAuthenticated && (
+          <NavLink to="/orders/tracking" style={navStyle}>Orders</NavLink>
+        )}
       </div>
 
       {/* Auth Buttons */}
-      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-        <NavLink
-          to="/login/buyer"
-          style={({ isActive }) => ({
-            color: isActive ? 'white' : 'var(--text-muted)',
-            textDecoration: 'none',
-            fontWeight: 500,
-            fontSize: '0.95rem',
-            transition: 'color 0.2s ease',
-          })}
-        >
-          Buyer Login
-        </NavLink>
-        <NavLink
-          to="/login/seller"
-          style={({ isActive }) => ({
-            color: isActive ? 'white' : 'var(--text-muted)',
-            textDecoration: 'none',
-            fontWeight: 500,
-            fontSize: '0.95rem',
-            transition: 'color 0.2s ease',
-          })}
-        >
-          Seller Login
-        </NavLink>
-        <Link
-          to="/register"
-          className="btn btn-primary"
-          style={{ padding: '8px 18px', fontSize: '0.9rem', textDecoration: 'none' }}
-        >
-          Get Started
-        </Link>
+      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        {!isAuthenticated ? (
+          <>
+            <NavLink to="/login/buyer" style={navStyle}>Buyer Login</NavLink>
+            <NavLink to="/login/seller" style={navStyle}>Seller Login</NavLink>
+            <Link to="/register" className="btn btn-primary">
+              Register
+            </Link>
+          </>
+        ) : (
+          <button onClick={handleLogout} className="btn btn-secondary">
+            Logout
+          </button>
+        )}
       </div>
     </nav>
   );

@@ -31,9 +31,9 @@ const LoginBuyer = () => {
 
   return (
     <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-      <div className="glass-panel" style={{ maxWidth: '400px', width: '100%', padding: '3rem 2rem', textAlign: 'center' }}>
+      <div className="auth-box">
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-          <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: 'rgba(236, 72, 153, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f472b6' }}>
+          <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
             <ShoppingBag size={32} />
           </div>
         </div>
@@ -51,13 +51,13 @@ const LoginBuyer = () => {
             <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Password</label>
             <input type="password" name="password" className="input-field" value={formData.password} onChange={handleChange} required />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)', border: 'none' }} disabled={loading}>
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px' }} disabled={loading}>
             {loading ? 'Logging in...' : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Start Shopping <ArrowRight size={18} style={{ marginLeft: '8px' }} /></span>}
           </button>
         </form>
         
         <p style={{ marginTop: '2rem', color: 'var(--text-muted)' }}>
-          Don't have an account? <Link to="/register" style={{ color: '#f472b6', textDecoration: 'none' }}>Sign up</Link>
+          Don't have an account? <Link to="/register" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: '500' }}>Sign up</Link>
         </p>
         <p style={{ marginTop: '1rem', fontSize: '0.9rem' }}>
           <Link to="/login/seller" style={{ color: 'var(--text-muted)', textDecoration: 'underline' }}>I am a seller</Link>

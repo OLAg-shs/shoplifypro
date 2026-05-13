@@ -9,6 +9,7 @@ import ProductManagement from './pages/ProductManagement';
 import OrderTracking from './pages/OrderTracking';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import ProtectedRoute from './components/ProtectedRoute';
 import StoreBuilder from './pages/StoreBuilder';
 import CardGenerator from './pages/CardGenerator';
 
@@ -24,11 +25,13 @@ function App() {
             <Route path="/login/buyer" element={<LoginBuyer />} />
             <Route path="/login/seller" element={<LoginSeller />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/seller/dashboard" element={<SellerDashboard />} />
-            <Route path="/products/manage" element={<ProductManagement />} />
-            <Route path="/orders/tracking" element={<OrderTracking />} />
-            <Route path="/store-builder" element={<StoreBuilder />} />
-            <Route path="/card-generator" element={<CardGenerator />} />
+            
+            {/* Protected Routes */}
+            <Route path="/seller/dashboard" element={<ProtectedRoute allowedRoles={['seller']}><SellerDashboard /></ProtectedRoute>} />
+            <Route path="/products/manage" element={<ProtectedRoute allowedRoles={['seller']}><ProductManagement /></ProtectedRoute>} />
+            <Route path="/orders/tracking" element={<ProtectedRoute><OrderTracking /></ProtectedRoute>} />
+            <Route path="/store-builder" element={<ProtectedRoute allowedRoles={['seller']}><StoreBuilder /></ProtectedRoute>} />
+            <Route path="/card-generator" element={<ProtectedRoute allowedRoles={['seller']}><CardGenerator /></ProtectedRoute>} />
           </Routes>
         </main>
         <Footer />
