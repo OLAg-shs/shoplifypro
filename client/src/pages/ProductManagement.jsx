@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Package, Upload, Trash2, PlusCircle, ImageIcon, CheckCircle, Loader } from 'lucide-react';
+import imglyRemoveBackground from '@imgly/background-removal';
 
 const MOCK_PRODUCTS = [
   { id: 1, name: 'Wireless Headphones Pro', price: 199.99, category: 'Electronics', stock: 25, image: null, bgRemoved: false },
@@ -33,27 +34,18 @@ const ProductManagement = () => {
   const handleUploadImage = async () => {
     if (!newProduct.imageFile) return;
     setUploading(true);
-    setUploadStatus('Removing background...');
+    setUploadStatus('Loading AI model... (This runs completely free on your device!)');
 
     try {
-      const token = localStorage.getItem('token');
-      const formData = new FormData();
-      formData.append('image', newProduct.imageFile);
+      // Run AI background removal directly in the browser!
+      const blob = await imglyRemoveBackground(newProduct.imageFile);
+      const url = URL.createObjectURL(blob);
 
-      const response = await fetch('/api/upload/image', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error('Upload failed');
-      const data = await response.json();
-
-      setNewProduct(p => ({ ...p, imagePreview: data.url, imageFile: null }));
-      setUploadStatus('✅ Background removed successfully!');
-    } catch {
-      // If the server isn't running/Cloudinary not configured, keep local preview
-      setUploadStatus('⚠️ Background removal requires Cloudinary. Using original image.');
+      setNewProduct(p => ({ ...p, imagePreview: url, imageFile: null }));
+      setUploadStatus('✅ Background removed successfully using local AI!');
+    } catch (error) {
+      console.error(error);
+      setUploadStatus('⚠️ Local AI removal failed. Keeping original image.');
     } finally {
       setUploading(false);
     }
