@@ -54,12 +54,15 @@ const Home = () => {
           The AI-powered multi-seller platform. Launch your uniquely branded store, generate viral ad cards, and manage products automatically.
         </p>
         
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
           <Link to="/register" className="btn btn-primary" style={{ padding: '12px 28px', fontSize: '1.1rem' }}>
             Start Selling Free <ArrowRight size={20} style={{ marginLeft: '8px' }} />
           </Link>
-          <Link to="/login" className="btn btn-secondary" style={{ padding: '12px 28px', fontSize: '1.1rem' }}>
-            Login to Dashboard
+          <Link to="/login/seller" className="btn btn-secondary" style={{ padding: '12px 28px', fontSize: '1.1rem' }}>
+            Seller Login
+          </Link>
+          <Link to="/login/buyer" className="btn btn-secondary" style={{ padding: '12px 28px', fontSize: '1.1rem' }}>
+            Buyer Login
           </Link>
         </div>
       </section>

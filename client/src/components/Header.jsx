@@ -45,7 +45,7 @@ const Header = () => {
       {/* Auth Buttons */}
       <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
         <NavLink
-          to="/login"
+          to="/login/buyer"
           style={({ isActive }) => ({
             color: isActive ? 'white' : 'var(--text-muted)',
             textDecoration: 'none',
@@ -54,7 +54,19 @@ const Header = () => {
             transition: 'color 0.2s ease',
           })}
         >
-          Login
+          Buyer Login
+        </NavLink>
+        <NavLink
+          to="/login/seller"
+          style={({ isActive }) => ({
+            color: isActive ? 'white' : 'var(--text-muted)',
+            textDecoration: 'none',
+            fontWeight: 500,
+            fontSize: '0.95rem',
+            transition: 'color 0.2s ease',
+          })}
+        >
+          Seller Login
         </NavLink>
         <Link
           to="/register"

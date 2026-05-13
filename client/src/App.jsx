@@ -1,7 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
-import Login from './pages/Login';
+import LoginBuyer from './pages/LoginBuyer';
+import LoginSeller from './pages/LoginSeller';
 import Register from './pages/Register';
 import SellerDashboard from './pages/SellerDashboard';
 import ProductManagement from './pages/ProductManagement';
@@ -19,7 +20,9 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={<LoginBuyer />} />
+            <Route path="/login/buyer" element={<LoginBuyer />} />
+            <Route path="/login/seller" element={<LoginSeller />} />
             <Route path="/register" element={<Register />} />
             <Route path="/seller/dashboard" element={<SellerDashboard />} />
             <Route path="/products/manage" element={<ProductManagement />} />
