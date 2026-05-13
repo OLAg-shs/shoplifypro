@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Store, TrendingUp, ShieldCheck, ArrowRight, PackageSearch, Globe, Zap, Users } from 'lucide-react';
+import { Store, TrendingUp, ShieldCheck, ArrowRight, Search, Globe, Zap, Users } from 'lucide-react';
 
 const Home = () => {
   return (
@@ -154,7 +154,7 @@ const Home = () => {
         color: 'white',
       }}>
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <PackageSearch size={64} style={{ color: 'var(--primary-accent)', marginBottom: '2rem', margin: '0 auto' }} />
+          <Search size={64} style={{ color: 'var(--primary-accent)', marginBottom: '2rem', margin: '0 auto' }} />
           <h2 style={{ fontSize: '3.5rem', color: 'white', marginBottom: '1.5rem' }}>Excellence in Order Fulfillment.</h2>
           <p style={{ color: '#94a3b8', maxWidth: '600px', margin: '0 auto 3rem auto', fontSize: '1.25rem', lineHeight: '1.6' }}>
             Provide your buyers with a world-class tracking experience. Transparency builds trust, and trust builds your business.
