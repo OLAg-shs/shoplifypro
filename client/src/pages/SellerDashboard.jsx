@@ -3,135 +3,85 @@ import { Link } from 'react-router-dom';
 import {
   Package, Store, ShoppingBag, DollarSign,
   Sparkles, CreditCard, Settings, Users,
-  TrendingUp, ArrowRight, Zap
+  TrendingUp, ArrowRight, Zap, ArrowUpRight
 } from 'lucide-react';
 
-const StatCard = ({ icon: Icon, label, value, color, link, linkLabel }) => (
-  <div className="glass-panel" style={{ padding: '1.5rem' }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-      <div style={{
-        width: '48px',
-        height: '48px',
-        borderRadius: '12px',
-        background: `${color}20`,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        border: `1px solid ${color}30`,
-      }}>
-        <Icon size={22} style={{ color }} />
-      </div>
-      <TrendingUp size={16} style={{ color: '#34d399' }} />
-    </div>
-    <div style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '4px' }}>{value}</div>
-    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>{label}</div>
-    {link && (
-      <Link
-        to={link}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '6px',
-          fontSize: '0.85rem',
-          color,
-          textDecoration: 'none',
-          fontWeight: 600,
-          transition: 'gap 0.2s ease',
-        }}
-      >
-        {linkLabel} <ArrowRight size={14} />
-      </Link>
-    )}
-  </div>
-);
-
-const ToolCard = ({ icon: Icon, title, description, link, gradient, badge }) => (
-  <Link
-    to={link}
-    style={{ textDecoration: 'none', color: 'inherit' }}
-  >
-    <div
-      className="glass-panel"
-      style={{
-        padding: '1.5rem',
-        cursor: 'pointer',
-        background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})`,
-        border: 'none',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      {badge && (
-        <div style={{
-          position: 'absolute',
-          top: '12px',
-          right: '12px',
-          background: 'rgba(255,255,255,0.2)',
-          backdropFilter: 'blur(6px)',
-          borderRadius: '20px',
-          padding: '3px 10px',
-          fontSize: '0.7rem',
-          fontWeight: 700,
-          color: '#fff',
-          letterSpacing: '0.5px',
-        }}>
-          {badge}
-        </div>
-      )}
+const StatCard = ({ icon: Icon, label, value, trend, trendUp }) => (
+  <div className="card animate-up" style={{ padding: '2rem' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
       <div style={{
         width: '52px',
         height: '52px',
         borderRadius: '14px',
-        background: 'rgba(255,255,255,0.2)',
+        background: '#f8fafc',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: '1rem',
+        border: '1px solid #e2e8f0',
+        color: 'var(--primary-accent)'
       }}>
-        <Icon size={26} color="white" />
+        <Icon size={24} />
       </div>
-      <h3 style={{ color: '#fff', margin: '0 0 8px 0', fontSize: '1.1rem' }}>{title}</h3>
-      <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.88rem', margin: '0 0 1rem 0', lineHeight: 1.5 }}>{description}</p>
-      <div style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        fontSize: '0.85rem',
-        color: '#fff',
-        fontWeight: 600,
-      }}>
-        Launch <ArrowRight size={14} />
-      </div>
+      {trend && (
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '4px', 
+          fontSize: '0.875rem', 
+          color: trendUp ? '#10b981' : '#ef4444',
+          fontWeight: '600',
+          padding: '4px 8px',
+          background: trendUp ? '#f0fdf4' : '#fef2f2',
+          borderRadius: '100px'
+        }}>
+          {trend} {trendUp ? <ArrowUpRight size={14} /> : null}
+        </div>
+      )}
+    </div>
+    <div style={{ fontSize: '2.25rem', fontWeight: 800, marginBottom: '6px', letterSpacing: '-0.02em' }}>{value}</div>
+    <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 500 }}>{label}</div>
+  </div>
+);
+
+const ActionCard = ({ icon: Icon, title, description, link, color }) => (
+  <Link to={link} className="card animate-up" style={{ 
+    display: 'flex', 
+    flexDirection: 'column', 
+    gap: '1.25rem',
+    textDecoration: 'none',
+    color: 'inherit',
+    borderLeft: `4px solid ${color}`
+  }}>
+    <div style={{
+      width: '48px',
+      height: '48px',
+      borderRadius: '12px',
+      background: `${color}10`,
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      color: color
+    }}>
+      <Icon size={24} />
+    </div>
+    <div>
+      <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>{title}</h3>
+      <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: 1.6, margin: 0 }}>{description}</p>
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: color, fontWeight: '600', fontSize: '0.9rem', marginTop: 'auto' }}>
+      Launch Tool <ArrowRight size={16} />
     </div>
   </Link>
 );
 
 const SellerDashboard = () => {
   const [stats, setStats] = useState({
-    totalStores: 0,
-    totalProducts: 0,
-    totalOrders: 0,
-    totalRevenue: 0,
+    totalStores: 1,
+    totalProducts: 5,
+    totalOrders: 12,
+    totalRevenue: 2450.00,
   });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/auth/me', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!response.ok) throw new Error('Failed to fetch');
-      } catch {
-        // Use mock data if API unavailable
-      } finally {
-        setStats({ totalStores: 1, totalProducts: 5, totalOrders: 12, totalRevenue: 2450.00 });
-        setLoading(false);
-      }
-    };
-    fetchStats();
-  }, []);
+  const [loading, setLoading] = useState(false);
 
   if (loading) {
     return (
@@ -142,129 +92,71 @@ const SellerDashboard = () => {
   }
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '3rem 2rem' }}>
       {/* Welcome Header */}
-      <div style={{ marginBottom: '2.5rem' }}>
-        <h1 style={{ margin: '0 0 8px 0', fontSize: '2rem' }}>
-          Welcome back 👋
-        </h1>
-        <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-          Here's an overview of your Eagle Choice seller account
-        </p>
+      <div className="animate-up" style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Dashboard Overview</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Manage your business operations and AI tools.</p>
+        </div>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <button className="btn btn-secondary">Download Report</button>
+          <Link to="/products/manage" className="btn btn-primary">+ Add Product</Link>
+        </div>
       </div>
 
       {/* Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem', marginBottom: '2.5rem' }}>
-        <StatCard
-          icon={Store}
-          label="Active Stores"
-          value={stats.totalStores}
-          color="#6366f1"
-          link="/stores/manage"
-          linkLabel="Manage Stores"
-        />
-        <StatCard
-          icon={Package}
-          label="Total Products"
-          value={stats.totalProducts}
-          color="#ec4899"
-          link="/products/manage"
-          linkLabel="Manage Products"
-        />
-        <StatCard
-          icon={ShoppingBag}
-          label="Total Orders"
-          value={stats.totalOrders}
-          color="#8b5cf6"
-          link="/orders/tracking"
-          linkLabel="View Orders"
-        />
-        <StatCard
-          icon={DollarSign}
-          label="Revenue"
-          value={`$${stats.totalRevenue.toLocaleString()}`}
-          color="#34d399"
-          link="/analytics"
-          linkLabel="View Analytics"
-        />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '2rem', marginBottom: '4rem' }}>
+        <StatCard icon={DollarSign} label="Net Revenue" value={`$${stats.totalRevenue.toLocaleString()}`} trend="+12.5%" trendUp={true} />
+        <StatCard icon={ShoppingBag} label="Total Orders" value={stats.totalOrders} trend="+4" trendUp={true} />
+        <StatCard icon={Package} label="Products" value={stats.totalProducts} trend="Stable" trendUp={true} />
+        <StatCard icon={Store} label="Active Stores" value={stats.totalStores} />
       </div>
 
-      {/* AI Power Tools */}
-      <div style={{ marginBottom: '2.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem' }}>
-          <Zap size={20} style={{ color: '#fbbf24' }} />
-          <h2 style={{ margin: 0, fontSize: '1.25rem' }}>AI Power Tools</h2>
-          <span style={{
-            background: 'rgba(251,191,36,0.15)',
-            border: '1px solid rgba(251,191,36,0.3)',
-            borderRadius: '20px',
-            padding: '2px 10px',
-            fontSize: '0.72rem',
-            color: '#fbbf24',
-            fontWeight: 700,
-          }}>POWERED BY AI</span>
+      {/* AI Tools Section */}
+      <div className="animate-up" style={{ marginBottom: '4rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '2rem' }}>
+          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--primary-accent)', boxShadow: '0 0 12px var(--primary-accent)' }}></div>
+          <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Business Optimization Tools</h2>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
-          <ToolCard
-            icon={Sparkles}
-            title="AI Store Builder"
-            description="Describe your dream store and our AI generates the perfect theme, colors, and layout in seconds."
-            link="/store-builder"
-            gradient={['#4f46e5', '#7c3aed']}
-            badge="AI"
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem' }}>
+          <ActionCard 
+            icon={Sparkles} 
+            title="AI Store Builder" 
+            description="Our neural engine generates high-converting storefronts based on your brand description." 
+            link="/store-builder" 
+            color="#6366f1"
           />
-          <ToolCard
-            icon={CreditCard}
-            title="Ad Card Generator"
-            description="Create stunning branded advertising cards for social media with real-time preview and 1-click download."
-            link="/card-generator"
-            gradient={['#db2777', '#9333ea']}
-            badge="NEW"
+          <ActionCard 
+            icon={CreditCard} 
+            title="Ad Card Engine" 
+            description="Design professional, viral-ready advertising cards for your products in a single click." 
+            link="/card-generator" 
+            color="#ec4899"
           />
-          <ToolCard
-            icon={Settings}
-            title="Product Manager"
-            description="Manage your catalog with AI-powered background removal for professional, studio-quality product photos."
-            link="/products/manage"
-            gradient={['#0891b2', '#0e7490']}
-            badge="PRO"
+          <ActionCard 
+            icon={Settings} 
+            title="Operations Manager" 
+            description="Control inventory, manage orders, and optimize your multi-vendor supply chain." 
+            link="/products/manage" 
+            color="#2563eb"
           />
         </div>
       </div>
 
-      {/* Quick Links */}
-      <div className="glass-panel">
-        <h2 style={{ marginBottom: '1.25rem', fontSize: '1.1rem' }}>Quick Actions</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-          {[
-            { icon: Package, label: 'Add Product',    link: '/products/manage' },
-            { icon: ShoppingBag, label: 'View Orders',   link: '/orders/tracking' },
-            { icon: Users, label: 'Manage Agents',  link: '/agents' },
-            { icon: TrendingUp, label: 'Analytics',      link: '/analytics' },
-          ].map(({ icon: Icon, label, link }) => (
-            <Link
-              key={link}
-              to={link}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '1.25rem',
-                borderRadius: '12px',
-                background: 'rgba(15,23,42,0.4)',
-                border: '1px solid var(--glass-border)',
-                textDecoration: 'none',
-                color: 'inherit',
-                transition: 'all 0.2s ease',
-                textAlign: 'center',
-              }}
-            >
-              <Icon size={22} style={{ color: 'var(--primary)' }} />
-              <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>{label}</span>
-            </Link>
-          ))}
+      {/* Quick Actions / Integration Status */}
+      <div className="card animate-up" style={{ padding: '3rem', background: 'var(--primary)', color: 'white', border: 'none' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '2rem' }}>
+          <div>
+            <h2 style={{ color: 'white', fontSize: '2rem', marginBottom: '1rem' }}>Ready to expand?</h2>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.1rem', maxWidth: '500px' }}>
+              Connect your existing Shopify or WooCommerce stores to Eagle Choice and manage everything from a single unified dashboard.
+            </p>
+          </div>
+          <button className="btn btn-primary" style={{ background: 'white', color: 'var(--primary)', padding: '1.25rem 3rem', fontSize: '1.1rem' }}>
+            Connect Integration
+          </button>
         </div>
       </div>
     </div>

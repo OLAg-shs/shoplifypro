@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, ArrowRight } from 'lucide-react';
+import { ShoppingBag, ArrowRight, Lock } from 'lucide-react';
 
 const LoginBuyer = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -30,38 +30,47 @@ const LoginBuyer = () => {
   };
 
   return (
-    <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-      <div className="auth-box">
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-          <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+    <div className="auth-container" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' }}>
+      <div className="auth-box animate-up" style={{ padding: '4rem 3.5rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <div style={{ display: 'inline-flex', width: '64px', height: '64px', borderRadius: '18px', background: '#eff6ff', alignItems: 'center', justifyContent: 'center', color: 'var(--primary-accent)', marginBottom: '1.5rem' }}>
             <ShoppingBag size={32} />
           </div>
+          <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Welcome Back</h2>
+          <p style={{ color: 'var(--text-muted)', fontWeight: 500 }}>The world's marketplace is waiting for you.</p>
         </div>
-        <h2 style={{ marginBottom: '0.5rem' }}>Welcome Back</h2>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Login to track orders and shop</p>
         
-        {error && <div style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', padding: '10px', borderRadius: '8px', marginBottom: '1.5rem' }}>{error}</div>}
+        {error && <div className="alert alert-error">{error}</div>}
         
-        <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Email</label>
-            <input type="email" name="email" className="input-field" value={formData.email} onChange={handleChange} required />
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Email Address</label>
+            <input type="email" name="email" className="input-field" value={formData.email} onChange={handleChange} required placeholder="name@company.com" />
           </div>
-          <div style={{ marginBottom: '2rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Password</label>
-            <input type="password" name="password" className="input-field" value={formData.password} onChange={handleChange} required />
+          <div className="form-group">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <label style={{ margin: 0 }}>Password</label>
+              <Link to="/forgot-password" style={{ fontSize: '0.85rem', color: 'var(--primary-accent)', textDecoration: 'none', fontWeight: '600' }}>Forgot password?</Link>
+            </div>
+            <input type="password" name="password" className="input-field" value={formData.password} onChange={handleChange} required placeholder="••••••••" />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px' }} disabled={loading}>
-            {loading ? 'Logging in...' : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Start Shopping <ArrowRight size={18} style={{ marginLeft: '8px' }} /></span>}
+          <button type="submit" className="btn btn-primary" style={{ height: '52px', marginTop: '1rem' }} disabled={loading}>
+            {loading ? 'Authenticating...' : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>Sign In to Account <ArrowRight size={20} /></span>}
           </button>
         </form>
         
-        <p style={{ marginTop: '2rem', color: 'var(--text-muted)' }}>
-          Don't have an account? <Link to="/register" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: '500' }}>Sign up</Link>
-        </p>
-        <p style={{ marginTop: '1rem', fontSize: '0.9rem' }}>
-          <Link to="/login/seller" style={{ color: 'var(--text-muted)', textDecoration: 'underline' }}>I am a seller</Link>
-        </p>
+        <div style={{ marginTop: '2.5rem', textAlign: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)', fontSize: '0.875rem', justifyContent: 'center', marginBottom: '1.5rem' }}>
+            <Lock size={14} />
+            Secure, encrypted authentication
+          </div>
+          <p className="auth-footer">
+            New to Eagle Choice? <Link to="/register">Create an account</Link>
+          </p>
+          <p style={{ marginTop: '1rem', fontSize: '0.9rem' }}>
+            <Link to="/login/seller" style={{ color: 'var(--text-muted)', textDecoration: 'underline' }}>Login as a verified seller</Link>
+          </p>
+        </div>
       </div>
     </div>
   );
