@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Package, Store, ShoppingBag, DollarSign,
-  TrendingUp, ArrowRight, ArrowUpRight, Clock, User
+  TrendingUp, ArrowRight, ArrowUpRight, Clock, User, Loader
 } from 'lucide-react';
+import { api } from '../utils/api';
 
-const StatCard = ({ icon: Icon, label, value, trend, trendUp }) => (
+const StatCard = ({ icon: Icon, label, value, trend, trendUp, loading }) => (
   <div className="card" style={{ padding: '2rem' }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
       <div style={{
@@ -37,24 +38,54 @@ const StatCard = ({ icon: Icon, label, value, trend, trendUp }) => (
         </div>
       )}
     </div>
-    <div style={{ fontSize: '2.25rem', fontWeight: 800, marginBottom: '6px', letterSpacing: '-0.02em' }}>{value}</div>
+    <div style={{ fontSize: '2.25rem', fontWeight: 800, marginBottom: '6px', letterSpacing: '-0.02em' }}>
+      {loading ? <Loader className="spinner" size={24} /> : value}
+    </div>
     <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 500 }}>{label}</div>
   </div>
 );
 
 const SellerDashboard = () => {
-  const [stats] = useState({
-    totalStores: 1,
-    totalProducts: 5,
-    totalOrders: 12,
-    totalRevenue: 2450.00,
+  const [stats, setStats] = useState({
+    totalStores: 0,
+    totalProducts: 0,
+    totalOrders: 0,
+    totalRevenue: 0,
   });
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const recentOrders = [
-    { id: '#ORD-9921', customer: 'Sarah Jenkins', date: '2 mins ago', amount: '$129.00', status: 'Processing' },
-    { id: '#ORD-9920', customer: 'Michael Chen', date: '45 mins ago', amount: '$45.50', status: 'Shipped' },
-    { id: '#ORD-9919', customer: 'Emma Wilson', date: '3 hours ago', amount: '$210.00', status: 'Processing' },
-  ];
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch Products
+      const products = await api.get('/products');
+      
+      // Fetch Store Orders
+      const orders = await api.get('/orders/store');
+      
+      // Calculate revenue
+      const revenue = orders.reduce((acc, order) => acc + parseFloat(order.total_amount), 0);
+      
+      setStats({
+        totalStores: 1, // Currently assuming one store per seller
+        totalProducts: products.length,
+        totalOrders: orders.length,
+        totalRevenue: revenue
+      });
+      
+      setRecentOrders(orders.slice(0, 5));
+    } catch (err) {
+      console.error("Dashboard fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -65,17 +96,17 @@ const SellerDashboard = () => {
           <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Your multi-vendor operations are performing optimally.</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
-          <button className="btn btn-secondary">Export Data</button>
+          <button className="btn btn-secondary" onClick={fetchDashboardData}>Refresh Data</button>
           <Link to="/products/manage" className="btn btn-primary">+ New Product</Link>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>
-        <StatCard icon={DollarSign} label="Net Revenue" value={`$${stats.totalRevenue.toLocaleString()}`} trend="+12.5%" trendUp={true} />
-        <StatCard icon={ShoppingBag} label="Total Orders" value={stats.totalOrders} trend="+4" trendUp={true} />
-        <StatCard icon={Package} label="Total Products" value={stats.totalProducts} trend="Stable" trendUp={true} />
-        <StatCard icon={Store} label="Active Stores" value={stats.totalStores} />
+        <StatCard icon={DollarSign} label="Net Revenue" value={`$${stats.totalRevenue.toLocaleString()}`} loading={loading} />
+        <StatCard icon={ShoppingBag} label="Total Orders" value={stats.totalOrders} loading={loading} />
+        <StatCard icon={Package} label="Total Products" value={stats.totalProducts} loading={loading} />
+        <StatCard icon={Store} label="Active Stores" value={stats.totalStores} loading={loading} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '2rem' }}>
@@ -86,6 +117,11 @@ const SellerDashboard = () => {
             <Link to="/orders/tracking" style={{ color: 'var(--primary-accent)', textDecoration: 'none', fontWeight: '600', fontSize: '0.9rem' }}>View All</Link>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {recentOrders.length === 0 && !loading && (
+              <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                No orders received yet.
+              </div>
+            )}
             {recentOrders.map((order, idx) => (
               <div key={order.id} style={{ 
                 display: 'grid', 
@@ -95,28 +131,29 @@ const SellerDashboard = () => {
                 borderBottom: idx === recentOrders.length - 1 ? 'none' : '1px solid var(--border-medium)',
                 gap: '1rem'
               }}>
-                <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>{order.id}</div>
+                <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>#{order.id.substring(0, 8)}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <User size={16} color="var(--text-muted)" />
                   </div>
-                  <span style={{ fontWeight: '500' }}>{order.customer}</span>
+                  <span style={{ fontWeight: '500' }}>{order.users?.name || 'Customer'}</span>
                 </div>
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                   <Clock size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                  {order.date}
+                  {new Date(order.created_at).toLocaleDateString()}
                 </div>
-                <div style={{ fontWeight: '700' }}>{order.amount}</div>
+                <div style={{ fontWeight: '700' }}>${parseFloat(order.total_amount).toFixed(2)}</div>
                 <div>
                   <span style={{ 
                     padding: '4px 10px', 
                     borderRadius: '100px', 
                     fontSize: '0.75rem', 
                     fontWeight: '700',
-                    background: order.status === 'Shipped' ? '#ecfdf5' : '#eff6ff',
-                    color: order.status === 'Shipped' ? '#059669' : '#2563eb'
+                    background: order.order_status === 'delivered' ? '#ecfdf5' : '#eff6ff',
+                    color: order.order_status === 'delivered' ? '#059669' : '#2563eb',
+                    textTransform: 'uppercase'
                   }}>
-                    {order.status}
+                    {order.order_status}
                   </span>
                 </div>
               </div>

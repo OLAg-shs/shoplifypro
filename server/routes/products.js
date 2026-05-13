@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Product = require('../models/Product');
-const Store = require('../models/Store');
+const { supabase } = require('../supabaseClient');
 const { protect, authorize } = require('../middleware/auth');
 
 // @desc    Get all products
@@ -11,26 +10,29 @@ router.get('/', async (req, res) => {
   try {
     const { storeId, category, featured, limit } = req.query;
     
-    let query = { isActive: true };
+    let query = supabase
+      .from('products')
+      .select('*, stores(name)')
+      .eq('is_active', true);
     
-    if (storeId) query.store = storeId;
-    if (category) query.category = category;
-    if (featured) query.isFeatured = featured === 'true';
+    if (storeId) query = query.eq('store_id', storeId);
+    if (category) query = query.eq('category', category);
+    if (featured) query = query.eq('is_featured', featured === 'true');
     
-    let products = Product.find(query)
-      .populate('store', 'name')
-      .sort({ createdAt: -1 });
+    query = query.order('created_at', { ascending: false });
     
     if (limit) {
-      products = products.limit(parseInt(limit));
+      query = query.limit(parseInt(limit));
     }
     
-    products = await products;
+    const { data: products, error } = await query;
+    
+    if (error) throw error;
     
     res.json(products);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("GET PRODUCTS ERROR:", error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -39,28 +41,24 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id)
-      .populate('store', 'name description')
-      .populate({
-        path: 'store',
-        populate: {
-          path: 'owner',
-          select: 'name email'
-        }
-      });
+    const { data: product, error } = await supabase
+      .from('products')
+      .select('*, stores(*, users(name, email))')
+      .eq('id', req.params.id)
+      .single();
     
-    if (!product) {
+    if (error || !product) {
       return res.status(404).json({ message: 'Product not found' });
     }
     
-    if (!product.isActive || !product.store.isPublished || !product.store.isVerified) {
+    if (!product.is_active || !product.stores.is_published || !product.stores.is_verified) {
       return res.status(403).json({ message: 'Product not available' });
     }
     
     res.json(product);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("GET PRODUCT BY ID ERROR:", error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -69,43 +67,61 @@ router.get('/:id', async (req, res) => {
 // @access  Private (Seller only)
 router.post('/', protect, authorize('seller'), async (req, res) => {
   try {
-    const { name, description, price, comparePrice, stock, sku, category, tags, images } = req.body;
+    const { name, description, price, compare_price, stock, sku, category, tags, images } = req.body;
     
     // Get user's store
-    const store = await Store.findOne({ owner: req.user._id });
-    if (!store) {
+    const { data: store, error: storeError } = await supabase
+      .from('stores')
+      .select('id, is_published')
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (storeError || !store) {
       return res.status(400).json({ message: 'You need to create a store first' });
     }
     
-    if (!store.isPublished) {
+    if (!store.is_published) {
       return res.status(400).json({ message: 'You need to publish your store first' });
     }
     
-    // Check if SKU already exists (if provided)
+    // Check if SKU already exists
     if (sku) {
-      const existingProduct = await Product.findOne({ sku });
+      const { data: existingProduct } = await supabase
+        .from('products')
+        .select('id')
+        .eq('sku', sku)
+        .single();
+
       if (existingProduct) {
         return res.status(400).json({ message: 'SKU already exists' });
       }
     }
     
-    const product = await Product.create({
-      name,
-      description,
-      price,
-      comparePrice: comparePrice || null,
-      stock: stock || 0,
-      sku: sku || null,
-      category: category || null,
-      tags: tags || [],
-      images: images || [],
-      store: store._id
-    });
+    const { data: product, error: insertError } = await supabase
+      .from('products')
+      .insert([
+        {
+          name,
+          description,
+          price,
+          compare_price: compare_price || null,
+          stock: stock || 0,
+          sku: sku || null,
+          category: category || null,
+          tags: tags || [],
+          images: images || [],
+          store_id: store.id
+        }
+      ])
+      .select()
+      .single();
+    
+    if (insertError) throw insertError;
     
     res.status(201).json(product);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("CREATE PRODUCT ERROR:", error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -114,55 +130,49 @@ router.post('/', protect, authorize('seller'), async (req, res) => {
 // @access  Private (Store owner only)
 router.put('/:id', protect, async (req, res) => {
   try {
-    let product = await Product.findById(req.params.id);
+    // Check if product exists and if user owns it
+    const { data: product, error: fetchError } = await supabase
+      .from('products')
+      .select('*, stores(owner_id)')
+      .eq('id', req.params.id)
+      .single();
     
-    if (!product) {
+    if (fetchError || !product) {
       return res.status(404).json({ message: 'Product not found' });
     }
     
-    // Get user's store
-    const store = await Store.findOne({ owner: req.user._id });
-    if (!store) {
-      return res.status(400).json({ message: 'Store not found' });
-    }
-    
-    // Check if user owns the product's store
-    if (product.store.toString() !== store._id.toString()) {
+    if (product.stores.owner_id !== req.user.id) {
       return res.status(403).json({ message: 'Not authorized to update this product' });
     }
     
-    const { name, description, price, comparePrice, stock, sku, category, tags, images, isActive, isFeatured } = req.body;
+    const { name, description, price, compare_price, stock, sku, category, tags, images, is_active, is_featured } = req.body;
     
-    // Check if SKU already exists (if provided and changed)
-    if (sku && sku !== product.sku) {
-      const existingProduct = await Product.findOne({ sku });
-      if (existingProduct) {
-        return res.status(400).json({ message: 'SKU already exists' });
-      }
-    }
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (price !== undefined) updateData.price = price;
+    if (compare_price !== undefined) updateData.compare_price = compare_price;
+    if (stock !== undefined) updateData.stock = stock;
+    if (sku !== undefined) updateData.sku = sku;
+    if (category !== undefined) updateData.category = category;
+    if (tags !== undefined) updateData.tags = tags;
+    if (images !== undefined) updateData.images = images;
+    if (is_active !== undefined) updateData.is_active = is_active;
+    if (is_featured !== undefined) updateData.is_featured = is_featured;
+
+    const { data: updatedProduct, error: updateError } = await supabase
+      .from('products')
+      .update(updateData)
+      .eq('id', req.params.id)
+      .select()
+      .single();
     
-    product = await Product.findByIdAndUpdate(
-      req.params.id,
-      { 
-        name: name || product.name,
-        description: description || product.description,
-        price: price !== undefined ? price : product.price,
-        comparePrice: comparePrice !== undefined ? comparePrice : product.comparePrice,
-        stock: stock !== undefined ? stock : product.stock,
-        sku: sku !== undefined ? sku : product.sku,
-        category: category !== undefined ? category : product.category,
-        tags: tags !== undefined ? tags : product.tags,
-        images: images !== undefined ? images : product.images,
-        isActive: isActive !== undefined ? isActive : product.isActive,
-        isFeatured: isFeatured !== undefined ? isFeatured : product.isFeatured
-      },
-      { new: true, runValidators: true }
-    );
+    if (updateError) throw updateError;
     
-    res.json(product);
+    res.json(updatedProduct);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("UPDATE PRODUCT ERROR:", error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -171,56 +181,32 @@ router.put('/:id', protect, async (req, res) => {
 // @access  Private (Store owner only)
 router.delete('/:id', protect, async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    // Check ownership
+    const { data: product, error: fetchError } = await supabase
+      .from('products')
+      .select('*, stores(owner_id)')
+      .eq('id', req.params.id)
+      .single();
     
-    if (!product) {
+    if (fetchError || !product) {
       return res.status(404).json({ message: 'Product not found' });
     }
     
-    // Get user's store
-    const store = await Store.findOne({ owner: req.user._id });
-    if (!store) {
-      return res.status(400).json({ message: 'Store not found' });
-    }
-    
-    // Check if user owns the product's store
-    if (product.store.toString() !== store._id.toString()) {
+    if (product.stores.owner_id !== req.user.id) {
       return res.status(403).json({ message: 'Not authorized to delete this product' });
     }
     
-    await product.remove();
+    const { error: deleteError } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', req.params.id);
+    
+    if (deleteError) throw deleteError;
     
     res.json({ message: 'Product removed' });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// @desc    Get products by store
-// @route   GET /api/stores/:storeId/products
-// @access  Public
-router.get('/stores/:storeId/products', async (req, res) => {
-  try {
-    const store = await Store.findById(req.params.storeId);
-    
-    if (!store) {
-      return res.status(404).json({ message: 'Store not found' });
-    }
-    
-    if (!store.isPublished || !store.isVerified) {
-      return res.status(403).json({ message: 'Store not available' });
-    }
-    
-    const products = await Product.find({ 
-      store: store._id,
-      isActive: true
-    }).sort({ createdAt: -1 });
-    
-    res.json(products);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("DELETE PRODUCT ERROR:", error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 

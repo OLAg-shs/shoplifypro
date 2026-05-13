@@ -1,30 +1,53 @@
 const express = require('express');
 const router = express.Router();
-const Order = require('../models/Order');
-const Store = require('../models/Store');
-const Product = require('../models/Product');
-const User = require('../models/User');
-const { protect, authorize } = require('../middleware/auth');
+const { supabase } = require('../supabaseClient');
+const { protect } = require('../middleware/auth');
 
-// @desc    Get user's orders
+// @desc    Get current user's orders
 // @route   GET /api/orders/myorders
 // @access  Private
 router.get('/myorders', protect, async (req, res) => {
   try {
-    const orders = await Order.find({ user: req.user._id })
-      .populate({
-        path: 'items.product',
-        select: 'name price images'
-      })
-      .populate({
-        path: 'store',
-        select: 'name'
-      })
-      .sort({ createdAt: -1 });
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select('*, order_items(*, products(name, images))')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false });
     
+    if (error) throw error;
     res.json(orders);
   } catch (error) {
-    console.error(error);
+    console.error("GET MY ORDERS ERROR:", error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @desc    Get store's orders
+// @route   GET /api/orders/store
+// @access  Private (Seller only)
+router.get('/store', protect, async (req, res) => {
+  try {
+    // Get user's store
+    const { data: store, error: storeError } = await supabase
+      .from('stores')
+      .select('id')
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (storeError || !store) {
+      return res.status(404).json({ message: 'Store not found' });
+    }
+
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select('*, order_items(*, products(name, images)), users(name, email)')
+      .eq('store_id', store.id)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    res.json(orders);
+  } catch (error) {
+    console.error("GET STORE ORDERS ERROR:", error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -34,207 +57,74 @@ router.get('/myorders', protect, async (req, res) => {
 // @access  Private
 router.get('/:id', protect, async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id)
-      .populate({
-        path: 'items.product',
-        select: 'name price images'
-      })
-      .populate({
-        path: 'store',
-        select: 'name'
-      })
-      .populate({
-        path: 'user',
-        select: 'name email'
-      });
+    const { data: order, error } = await supabase
+      .from('orders')
+      .select('*, order_items(*, products(*)), stores(name, owner_id)')
+      .eq('id', req.params.id)
+      .single();
     
-    if (!order) {
+    if (error || !order) {
       return res.status(404).json({ message: 'Order not found' });
     }
     
-    // Check if user owns the order or is admin
-    if (order.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized to view this order' });
+    // Check if user is buyer or store owner
+    if (order.user_id !== req.user.id && order.stores.owner_id !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized' });
     }
     
     res.json(order);
   } catch (error) {
-    console.error(error);
+    console.error("GET ORDER BY ID ERROR:", error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// @desc    Create order
+// @desc    Create new order
 // @route   POST /api/orders
 // @access  Private
 router.post('/', protect, async (req, res) => {
   try {
-    const { orderItems, shippingAddress, paymentMethod } = req.body;
+    const { store_id, order_items, shipping_address, payment_info, total_amount } = req.body;
     
-    if (!orderItems || orderItems.length === 0) {
+    if (!order_items || order_items.length === 0) {
       return res.status(400).json({ message: 'No order items' });
     }
     
-    // Calculate total and validate items
-    let totalAmount = 0;
-    const validatedItems = [];
+    // Insert order
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .insert([
+        {
+          user_id: req.user.id,
+          store_id,
+          shipping_address,
+          payment_info,
+          total_amount,
+          order_status: 'pending'
+        }
+      ])
+      .select()
+      .single();
     
-    for (const item of orderItems) {
-      const product = await Product.findById(item.product);
-      if (!product) {
-        return res.status(404).json({ message: `Product not found: ${item.product}` });
-      }
-      
-      if (!product.isActive) {
-        return res.status(400).json({ message: `Product not available: ${product.name}` });
-      }
-      
-      // Check stock
-      if (product.stock < item.quantity) {
-        return res.status(400).json({ message: `Insufficient stock for ${product.name}` });
-      }
-      
-      const itemPrice = product.price * item.quantity;
-      totalAmount += itemPrice;
-      
-      validatedItems.push({
-        product: product._id,
-        quantity: item.quantity,
-        price: product.price
-      });
-      
-      // Reduce stock
-      product.stock -= item.quantity;
-      await product.save();
-    }
+    if (orderError) throw orderError;
     
-    // Get user's default store (for now, we'll use the first store they own)
-    const userStore = await Store.findOne({ owner: req.user._id, isPublished: true });
-    if (!userStore) {
-      return res.status(400).json({ message: 'No published store found' });
-    }
+    // Insert order items
+    const itemsToInsert = order_items.map(item => ({
+      order_id: order.id,
+      product_id: item.product_id,
+      quantity: item.quantity,
+      price: item.price
+    }));
     
-    const order = await Order.create({
-      user: req.user._id,
-      store: userStore._id,
-      items: validatedItems,
-      shippingAddress,
-      paymentInfo: {
-        method: paymentMethod,
-        status: 'pending'
-      },
-      totalAmount
-    });
+    const { error: itemsError } = await supabase
+      .from('order_items')
+      .insert(itemsToInsert);
     
-    // Populate order for response
-    const populatedOrder = await Order.findById(order._id)
-      .populate({
-        path: 'items.product',
-        select: 'name price images'
-      })
-      .populate({
-        path: 'store',
-        select: 'name'
-      });
+    if (itemsError) throw itemsError;
     
-    res.status(201).json(populatedOrder);
+    res.status(201).json(order);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// @desc    Update order status
-// @route   PUT /api/orders/:id/status
-// @access  Private (Admin/Seller)
-router.put('/:id/status', protect, async (req, res) => {
-  try {
-    const { orderStatus, trackingNumber } = req.body;
-    
-    const order = await Order.findById(req.params.id)
-      .populate({
-        path: 'user',
-        select: 'name email'
-      })
-      .populate({
-        path: 'store',
-        select: 'name'
-      });
-    
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
-    
-    // Check if user is admin or store owner
-    const store = await Store.findById(order.store);
-    if (req.user.role !== 'admin' && store.owner.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to update this order' });
-    }
-    
-    const updateData = {
-      orderStatus: orderStatus || order.orderStatus
-    };
-    
-    if (trackingNumber) {
-      updateData.trackingNumber = trackingNumber;
-    }
-    
-    // If order is delivered, set estimated delivery date
-    if (orderStatus === 'delivered') {
-      updateData.estimatedDelivery = new Date();
-    }
-    
-    const updatedOrder = await Order.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    )
-    .populate({
-      path: 'items.product',
-      select: 'name price images'
-    })
-    .populate({
-      path: 'store',
-      select: 'name'
-    });
-    
-    res.json(updatedOrder);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// @desc    Get store orders (for seller dashboard)
-// @route   GET /api/orders/store/:storeId
-// @access  Private (Store owner)
-router.get('/store/:storeId', protect, async (req, res) => {
-  try {
-    const store = await Store.findById(req.params.storeId);
-    
-    if (!store) {
-      return res.status(404).json({ message: 'Store not found' });
-    }
-    
-    // Check if user owns the store
-    if (store.owner.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized to view these orders' });
-    }
-    
-    const orders = await Order.find({ store: req.params.storeId })
-      .populate({
-        path: 'items.product',
-        select: 'name price images'
-      })
-      .populate({
-        path: 'user',
-        select: 'name email'
-      })
-      .sort({ createdAt: -1 });
-    
-    res.json(orders);
-  } catch (error) {
-    console.error(error);
+    console.error("CREATE ORDER ERROR:", error);
     res.status(500).json({ message: 'Server error' });
   }
 });
