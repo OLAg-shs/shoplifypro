@@ -5,6 +5,8 @@ import LoginBuyer from './pages/LoginBuyer';
 import LoginSeller from './pages/LoginSeller';
 import Register from './pages/Register';
 import SellerDashboard from './pages/SellerDashboard';
+import BuyerDashboard from './pages/BuyerDashboard';
+import AgentDashboard from './pages/AgentDashboard';
 import ProductManagement from './pages/ProductManagement';
 import OrderTracking from './pages/OrderTracking';
 import Header from './components/Header';
@@ -13,6 +15,20 @@ import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
 import StoreBuilder from './pages/StoreBuilder';
 import CardGenerator from './pages/CardGenerator';
+
+const DashboardSelector = () => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  
+  switch (user.role) {
+    case 'seller':
+      return <SellerDashboard />;
+    case 'agent':
+      return <AgentDashboard />;
+    case 'buyer':
+    default:
+      return <BuyerDashboard />;
+  }
+};
 
 function App() {
   return (
@@ -25,7 +41,16 @@ function App() {
           <Route path="/login/seller" element={<><Header /><LoginSeller /><Footer /></>} />
           <Route path="/register" element={<><Header /><Register /><Footer /></>} />
           
-          {/* Protected Seller Dashboard Routes (with Sidebar Layout) */}
+          {/* Dashboard Routing based on role */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <DashboardSelector />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } />
+
+          {/* Legacy path support */}
           <Route path="/seller/dashboard" element={
             <ProtectedRoute allowedRoles={['seller']}>
               <DashboardLayout><SellerDashboard /></DashboardLayout>

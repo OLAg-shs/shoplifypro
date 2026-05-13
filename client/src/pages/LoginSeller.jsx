@@ -27,7 +27,7 @@ const LoginSeller = () => {
         
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data));
-        navigate('/seller/dashboard');
+        navigate('/dashboard');
       } else {
         const text = await response.text();
         console.error("Server returned non-JSON response:", text);

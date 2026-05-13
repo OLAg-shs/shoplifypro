@@ -14,7 +14,7 @@ const Home = () => {
         overflow: 'hidden'
       }}>
         {/* Animated Background Elements */}
-        <div style={{
+        <div className="animate-float" style={{
           position: 'absolute',
           top: '-100px',
           left: '-100px',
@@ -123,7 +123,7 @@ const Home = () => {
           gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
           gap: '3rem'
         }}>
-          <div className="card" style={{ padding: '3.5rem', borderRadius: '24px', border: 'none', background: '#f8fafc' }}>
+          <div className="card hover-lift" style={{ padding: '3.5rem', borderRadius: '24px', border: 'none', background: '#f8fafc' }}>
             <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2.5rem', color: 'var(--primary-accent)', boxShadow: 'var(--shadow-subtle)' }}>
               <Layout size={32} />
             </div>
@@ -133,7 +133,7 @@ const Home = () => {
             </p>
           </div>
 
-          <div className="card" style={{ padding: '3.5rem', borderRadius: '24px', border: 'none', background: '#f8fafc' }}>
+          <div className="card hover-lift" style={{ padding: '3.5rem', borderRadius: '24px', border: 'none', background: '#f8fafc' }}>
             <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2.5rem', color: '#10b981', boxShadow: 'var(--shadow-subtle)' }}>
               <Wand2 size={32} />
             </div>
@@ -143,7 +143,7 @@ const Home = () => {
             </p>
           </div>
 
-          <div className="card" style={{ padding: '3.5rem', borderRadius: '24px', border: 'none', background: '#f8fafc' }}>
+          <div className="card hover-lift" style={{ padding: '3.5rem', borderRadius: '24px', border: 'none', background: '#f8fafc' }}>
             <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2.5rem', color: '#f59e0b', boxShadow: 'var(--shadow-subtle)' }}>
               <BarChart3 size={32} />
             </div>
@@ -153,7 +153,7 @@ const Home = () => {
             </p>
           </div>
 
-          <div className="card" style={{ padding: '3.5rem', borderRadius: '24px', border: 'none', background: '#f8fafc' }}>
+          <div className="card hover-lift" style={{ padding: '3.5rem', borderRadius: '24px', border: 'none', background: '#f8fafc' }}>
             <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2.5rem', color: '#ef4444', boxShadow: 'var(--shadow-subtle)' }}>
               <ShieldCheck size={32} />
             </div>

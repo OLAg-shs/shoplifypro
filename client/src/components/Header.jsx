@@ -8,6 +8,16 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   useEffect(() => {
     // Check auth state on every route change
     const token = localStorage.getItem('token');
@@ -44,7 +54,7 @@ const Header = () => {
   });
 
   return (
-    <nav>
+    <nav className={scrolled ? 'scrolled' : ''}>
       {/* Logo */}
       <Link to="/" className="logo" style={{ color: 'var(--text-main)' }}>
         <ShoppingBag size={22} style={{ color: 'var(--primary)' }} />
@@ -55,18 +65,16 @@ const Header = () => {
       <div className="nav-links">
         <NavLink to="/" end style={navStyle}>Home</NavLink>
         
-        {/* Only show these if logged in */}
+        {isAuthenticated && (
+          <NavLink to="/dashboard" style={navStyle}>Dashboard</NavLink>
+        )}
+
         {isAuthenticated && userRole === 'seller' && (
           <>
-            <NavLink to="/seller/dashboard" style={navStyle}>Dashboard</NavLink>
             <NavLink to="/store-builder" style={navStyle}>Store Builder</NavLink>
             <NavLink to="/card-generator" style={navStyle}>Ad Cards</NavLink>
             <NavLink to="/products/manage" style={navStyle}>Products</NavLink>
           </>
-        )}
-        
-        {isAuthenticated && (
-          <NavLink to="/orders/tracking" style={navStyle}>Orders</NavLink>
         )}
       </div>
 
