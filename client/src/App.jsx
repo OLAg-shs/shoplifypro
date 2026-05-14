@@ -6,6 +6,8 @@ import Home from './pages/Home';
 import LoginBuyer from './pages/LoginBuyer';
 import LoginSeller from './pages/LoginSeller';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import PublicStorefront from './pages/PublicStorefront';
 import Checkout from './pages/Checkout';
 
@@ -92,6 +94,8 @@ function App() {
           <Route path="/login/buyer"  element={<PublicPage><LoginBuyer /></PublicPage>} />
           <Route path="/login/seller" element={<PublicPage><LoginSeller /></PublicPage>} />
           <Route path="/register"     element={<PublicPage><Register /></PublicPage>} />
+          <Route path="/forgot-password" element={<PublicPage><ForgotPassword /></PublicPage>} />
+          <Route path="/reset-password/:token" element={<PublicPage><ResetPassword /></PublicPage>} />
           <Route path="/store/:slug"  element={<PublicStorefront />} />
           <Route path="/checkout"     element={<ProtectedRoute><PublicPage><Checkout /></PublicPage></ProtectedRoute>} />
 

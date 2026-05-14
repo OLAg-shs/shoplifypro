@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const { supabase } = require('../supabaseClient');
 const { protect, authorize } = require('../middleware/auth');
 const rateLimit = require('express-rate-limit');
@@ -338,6 +339,100 @@ router.put('/admin/seller/:id', protect, authorize('admin'), async (req, res) =>
     });
   } catch (error) {
     console.error('[ADMIN APPROVE SELLER ERROR]', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @desc    Request password reset
+// @route   POST /api/auth/forgot-password
+// @access  Public
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    const { data: user, error: fetchError } = await supabase
+      .from('users')
+      .select('id, name')
+      .eq('email', email)
+      .single();
+
+    if (fetchError || !user) {
+      // Security: Don't reveal if user exists, but we'll return 200 anyway
+      return res.json({ message: 'If an account exists with that email, a reset link has been sent.' });
+    }
+
+    // Generate token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const resetTokenExpires = new Date(Date.now() + 3600000).toISOString(); // 1 hour
+
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ reset_token: resetTokenHash, reset_token_expires: resetTokenExpires })
+      .eq('id', user.id);
+
+    if (updateError) throw updateError;
+
+    // FOR DEVELOPMENT: Log the link to console since no email provider is set
+    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+    console.log(`[PASSWORD RESET] Link for ${email}: ${resetUrl}`);
+
+    res.json({ 
+      message: 'If an account exists with that email, a reset link has been sent.',
+      // In production, NEVER return this. For this task, we'll return it so the user can test easily.
+      debug_link: process.env.NODE_ENV === 'production' ? null : resetUrl 
+    });
+  } catch (error) {
+    console.error('[FORGOT PASSWORD ERROR]', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @desc    Reset password
+// @route   POST /api/auth/reset-password/:token
+// @access  Public
+router.post('/reset-password/:token', async (req, res) => {
+  try {
+    const { password } = req.body;
+    const { token } = req.params;
+
+    const resetTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const { data: user, error: fetchError } = await supabase
+      .from('users')
+      .select('id, reset_token_expires')
+      .eq('reset_token', resetTokenHash)
+      .single();
+
+    if (fetchError || !user) {
+      return res.status(400).json({ message: 'Invalid or expired token' });
+    }
+
+    // Check if token expired
+    if (new Date(user.reset_token_expires) < new Date()) {
+      return res.status(400).json({ message: 'Token has expired' });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Update user and clear token
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ 
+        password: hashedPassword, 
+        reset_token: null, 
+        reset_token_expires: null 
+      })
+      .eq('id', user.id);
+
+    if (updateError) throw updateError;
+
+    res.json({ message: 'Password reset successful. You can now log in.' });
+  } catch (error) {
+    console.error('[RESET PASSWORD ERROR]', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
