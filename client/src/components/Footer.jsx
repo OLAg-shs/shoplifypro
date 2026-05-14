@@ -9,10 +9,15 @@ const Footer = () => {
         <div className="footer-grid">
           <div className="footer-brand">
             <Link to="/" className="footer-logo">
-              <div className="logo-icon">
+              <div className="logo-icon" style={{ background: 'linear-gradient(135deg, #2563eb, #38bdf8)' }}>
                 <ShoppingBag size={24} />
               </div>
-              <span>Eagle Choice</span>
+              <span style={{ 
+                background: 'linear-gradient(to right, #ffffff, #94a3b8)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontWeight: 800
+              }}>Eagle Choice</span>
             </Link>
             <p className="footer-description">
               The definitive multi-vendor operating system. We provide the infrastructure for the next generation of global commerce empires.

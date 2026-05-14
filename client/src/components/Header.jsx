@@ -56,17 +56,23 @@ const Header = () => {
 
   return (
     <nav className={scrolled ? 'scrolled' : ''} style={{
-      background: scrolled ? 'rgba(2, 6, 23, 0.9)' : 'transparent',
-      borderBottom: scrolled ? '1px solid rgba(255,255,255,0.05)' : 'none',
+      background: scrolled ? 'rgba(2, 6, 23, 0.95)' : 'transparent',
+      borderBottom: scrolled ? '1px solid rgba(255,255,255,0.1)' : 'none',
       padding: '0 4rem',
-      height: scrolled ? '70px' : '90px'
+      height: scrolled ? '70px' : '90px',
+      backdropFilter: scrolled ? 'blur(20px)' : 'none',
     }}>
       {/* Logo */}
-      <Link to="/" className="logo" style={{ color: 'white', fontSize: '1.4rem' }}>
-        <div style={{ width: '32px', height: '32px', background: '#2563eb', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-          <ShoppingBag size={18} />
+      <Link to="/" className="logo" style={{ color: 'white', fontSize: '1.4rem', textShadow: '0 0 20px rgba(37, 99, 235, 0.4)' }}>
+        <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #2563eb, #38bdf8)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)' }}>
+          <ShoppingBag size={20} />
         </div>
-        Eagle Choice
+        <span style={{ 
+          background: 'linear-gradient(to right, #ffffff, #e2e8f0)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          fontWeight: 800
+        }}>Eagle Choice</span>
       </Link>
 
       {/* Nav Links */}

@@ -54,7 +54,8 @@ const Home = () => {
               lineHeight: '0.95',
               letterSpacing: '-0.06em',
               marginBottom: '2.5rem',
-              color: 'white'
+              color: '#ffffff',
+              textShadow: '0 0 40px rgba(56, 189, 248, 0.1)'
             }}>
               Build your <br/>
               <span style={{ 
@@ -66,7 +67,7 @@ const Home = () => {
 
             <p style={{ 
               fontSize: '1.35rem', 
-              color: '#94a3b8', 
+              color: '#cbd5e1', 
               lineHeight: '1.7', 
               marginBottom: '3.5rem',
               maxWidth: '600px'
@@ -164,14 +165,14 @@ const Home = () => {
           <div className="bento-card" style={{ gridColumn: 'span 8', padding: '3rem', borderRadius: '32px', background: 'rgba(255,255,255,0.02)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
               <div style={{ color: '#38bdf8', marginBottom: '1.5rem' }}><Layout size={40} /></div>
-              <h3 style={{ fontSize: '2.25rem', fontWeight: 700, marginBottom: '1rem' }}>AI Store Builder</h3>
-              <p style={{ color: '#94a3b8', fontSize: '1.15rem', maxWidth: '500px', lineHeight: '1.7' }}>
+              <h3 style={{ fontSize: '2.25rem', fontWeight: 700, marginBottom: '1rem', color: '#ffffff' }}>AI Store Builder</h3>
+              <p style={{ color: '#cbd5e1', fontSize: '1.15rem', maxWidth: '500px', lineHeight: '1.7' }}>
                 Our proprietary AI analyzes your brand identity and products to generate a high-converting storefront in under 60 seconds. No coding, no headaches.
               </p>
             </div>
             <div style={{ marginTop: '2rem', display: 'flex', gap: '10px' }}>
-              <span style={{ padding: '6px 14px', background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 700 }}>DYNAMIC LAYOUTS</span>
-              <span style={{ padding: '6px 14px', background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 700 }}>AUTO-BRANDING</span>
+              <span style={{ padding: '6px 14px', background: 'rgba(56, 189, 248, 0.1)', color: '#7dd3fc', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 700 }}>DYNAMIC LAYOUTS</span>
+              <span style={{ padding: '6px 14px', background: 'rgba(56, 189, 248, 0.1)', color: '#7dd3fc', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 700 }}>AUTO-BRANDING</span>
             </div>
           </div>
 
@@ -179,7 +180,7 @@ const Home = () => {
           <div className="bento-card" style={{ gridColumn: 'span 4', padding: '3rem', borderRadius: '32px', background: 'rgba(255,255,255,0.02)' }}>
             <div style={{ color: '#f59e0b', marginBottom: '1.5rem' }}><Zap size={40} /></div>
             <h3 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '1rem' }}>Instant Load</h3>
-            <p style={{ color: '#94a3b8', lineHeight: '1.7' }}>
+            <p style={{ color: '#cbd5e1', lineHeight: '1.7' }}>
               Optimized at the edge. Your storefront loads in under 500ms globally, ensuring zero drop-off from eager customers.
             </p>
           </div>
@@ -188,7 +189,7 @@ const Home = () => {
           <div className="bento-card" style={{ gridColumn: 'span 4', padding: '3rem', borderRadius: '32px', background: 'rgba(255,255,255,0.02)' }}>
             <div style={{ color: '#10b981', marginBottom: '1.5rem' }}><Wand2 size={40} /></div>
             <h3 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '1rem' }}>Visual AI</h3>
-            <p style={{ color: '#94a3b8', lineHeight: '1.7' }}>
+            <p style={{ color: '#cbd5e1', lineHeight: '1.7' }}>
               Automatically remove backgrounds and enhance lighting for every product image you upload. Professional studio quality, instantly.
             </p>
           </div>
@@ -197,8 +198,8 @@ const Home = () => {
           <div className="bento-card" style={{ gridColumn: 'span 8', padding: '3rem', borderRadius: '32px', background: 'rgba(255,255,255,0.02)', display: 'flex', gap: '3rem', alignItems: 'center' }}>
             <div style={{ flex: 1 }}>
               <div style={{ color: '#8b5cf6', marginBottom: '1.5rem' }}><Cpu size={40} /></div>
-              <h3 style={{ fontSize: '2.25rem', fontWeight: 700, marginBottom: '1rem' }}>Unified Operations</h3>
-              <p style={{ color: '#94a3b8', fontSize: '1.15rem', lineHeight: '1.7' }}>
+              <h3 style={{ fontSize: '2.25rem', fontWeight: 700, marginBottom: '1rem', color: '#ffffff' }}>Unified Operations</h3>
+              <p style={{ color: '#cbd5e1', fontSize: '1.15rem', lineHeight: '1.7' }}>
                 One dashboard to rule them all. Manage inventory, orders, payments, and multi-vendor logistics without ever switching tabs.
               </p>
             </div>
