@@ -29,10 +29,10 @@ import DashboardLayout from './components/DashboardLayout';
 const DashboardSelector = () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   switch (user.role) {
-    case 'seller': return <SellerDashboard />;
-    case 'agent':  return <AgentDashboard />;
+    case 'seller': return <Navigate to="/seller/dashboard" replace />;
+    case 'agent':  return <PublicPage><AgentDashboard /></PublicPage>;
     case 'buyer':
-    default:       return <BuyerDashboard />;
+    default:       return <PublicPage><BuyerDashboard /></PublicPage>;
   }
 };
 
@@ -52,6 +52,23 @@ const SellerPage = ({ children, roles = ['seller'] }) => (
   </ProtectedRoute>
 );
 
+// ── Orders Wrapper (Role-based layout) ─────────────────────────────────────────
+const OrdersWrapper = () => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  if (user.role === 'seller') {
+    return (
+      <ProtectedRoute allowedRoles={['seller']}>
+        <DashboardLayout><OrderTracking /></DashboardLayout>
+      </ProtectedRoute>
+    );
+  }
+  return (
+    <ProtectedRoute>
+      <PublicPage><OrderTracking /></PublicPage>
+    </ProtectedRoute>
+  );
+};
+
 // ── App Router ────────────────────────────────────────────────────────────────
 function App() {
   return (
@@ -68,7 +85,7 @@ function App() {
           {/* ── Universal Dashboard (role-based) ── */}
           <Route path="/dashboard" element={
             <ProtectedRoute>
-              <DashboardLayout><DashboardSelector /></DashboardLayout>
+              <DashboardSelector />
             </ProtectedRoute>
           } />
 
@@ -80,12 +97,8 @@ function App() {
           <Route path="/analytics"        element={<SellerPage><Analytics /></SellerPage>} />
           <Route path="/seller/settings"  element={<SellerPage><SellerSettings /></SellerPage>} />
 
-          {/* ── Orders (accessible to both sellers and buyers, inside DashboardLayout for sellers) ── */}
-          <Route path="/orders/tracking" element={
-            <ProtectedRoute>
-              <DashboardLayout><OrderTracking /></DashboardLayout>
-            </ProtectedRoute>
-          } />
+          {/* ── Orders (role-based layout) ── */}
+          <Route path="/orders/tracking" element={<OrdersWrapper />} />
 
           {/* ── Fallback ── */}
           <Route path="*" element={<Navigate to="/" replace />} />

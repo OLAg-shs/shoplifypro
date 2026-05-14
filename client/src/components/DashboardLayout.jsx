@@ -38,7 +38,7 @@ const DashboardLayout = ({ children }) => {
           </div>
         </div>
 
-        <nav style={{ flex: 1 }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem', paddingLeft: '1rem' }}>Main Menu</div>
           <NavLink to="/seller/dashboard" className={({isActive}) => isActive ? 'sidebar-link active' : 'sidebar-link'}>
             <LayoutDashboard size={20} /> Dashboard
@@ -65,7 +65,7 @@ const DashboardLayout = ({ children }) => {
           <NavLink to="/seller/settings" className={({isActive}) => isActive ? 'sidebar-link active' : 'sidebar-link'}>
             <Settings size={20} /> Settings
           </NavLink>
-        </nav>
+        </div>
 
         <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border-medium)', paddingTop: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem', paddingLeft: '0.5rem' }}>
