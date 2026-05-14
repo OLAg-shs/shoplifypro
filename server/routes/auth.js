@@ -1,8 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
 const { supabase } = require('../supabaseClient');
 const { protect, authorize } = require('../middleware/auth');
 const rateLimit = require('express-rate-limit');
@@ -54,54 +51,44 @@ router.post('/register', registerLimiter, registerValidation, validate, async (r
   try {
     const { name, email, password, role } = req.body;
 
-    // Sanity check for environment configuration
-    if (!supabase) {
-      return res.status(500).json({ 
-        message: 'Database Configuration Error', 
-        error: 'Supabase client is not initialized. Please check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel settings.' 
-      });
+    // 1. Sign Up via Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name, role }
+      }
+    });
+
+    if (authError) {
+      return res.status(400).json({ message: authError.message });
     }
 
-    if (!process.env.JWT_SECRET) {
-      return res.status(500).json({ 
-        message: 'Security Configuration Error', 
-        error: 'JWT_SECRET is not defined in Vercel settings.' 
-      });
-    }
+    const userId = authData.user.id;
 
-    // Check if user already exists
-    const { data: existingUser, error: fetchError } = await supabase
+    // 2. Check if user meta exists (sometimes signUp returns success even if user existed but was unverified)
+    const { data: existingUser } = await supabase
       .from('users')
       .select('id')
-      .eq('email', email)
+      .eq('id', userId)
       .single();
 
-    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means no rows returned
-      throw fetchError;
-    }
-
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ message: 'User metadata already exists' });
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // Determine user status
+    let status = 'active'; 
+    if (role === 'seller') status = 'pending';
 
-    // Determine user status based on role
-    let status = 'active'; // Default for buyers
-    if (role === 'seller') {
-      status = 'pending'; // Sellers need admin approval
-    }
-
-    // Insert user
+    // 3. Insert into public.users
     const { data: newUser, error: insertError } = await supabase
       .from('users')
       .insert([
         {
+          id: userId,
           name,
           email,
-          password: hashedPassword,
           role: role || 'buyer',
           status,
           is_verified: false
@@ -111,24 +98,9 @@ router.post('/register', registerLimiter, registerValidation, validate, async (r
       .single();
 
     if (insertError) {
+      // Cleanup auth user if meta insert fails? Usually handled by triggers, but let's be careful.
       throw insertError;
     }
-
-    // 🔐 SECURITY: Pending sellers do NOT receive a JWT on registration.
-    // They must wait for admin approval before they can log in.
-    if (newUser.status === 'pending') {
-      return res.status(201).json({
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        status: 'pending',
-        message: 'Registration successful! Your seller account is pending admin approval. You will be notified once approved.',
-      });
-    }
-
-    // Buyers get immediate access with a token
-    const token = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     res.status(201).json({
       id: newUser.id,
@@ -136,7 +108,8 @@ router.post('/register', registerLimiter, registerValidation, validate, async (r
       email: newUser.email,
       role: newUser.role,
       status: newUser.status,
-      token,
+      token: authData.session?.access_token,
+      message: role === 'seller' ? 'Seller account pending approval.' : 'Registration successful.'
     });
   } catch (error) {
     console.error('[REGISTER ERROR]', error);
@@ -149,38 +122,33 @@ router.post('/login', loginLimiter, loginValidation, validate, async (req, res) 
   try {
     const { email, password } = req.body;
 
-    // Fetch user with only needed fields (password for compare, role for JWT)
+    // 1. Sign In via Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (authError) {
+      return res.status(400).json({ message: authError.message });
+    }
+
+    // 2. Fetch User metadata (role, status)
     const { data: user, error: fetchError } = await supabase
       .from('users')
-      .select('id, name, email, password, role, status')
-      .eq('email', email)
+      .select('id, name, email, role, status')
+      .eq('id', authData.user.id)
       .single();
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      throw fetchError;
+    if (fetchError || !user) {
+      return res.status(400).json({ message: 'User metadata not found' });
     }
 
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-
-    // Check if account is active
+    // 3. Check Status
     if (user.status !== 'active') {
       return res.status(403).json({ 
         message: `Account is ${user.status}. Please wait for admin approval.` 
       });
     }
-
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-
-    // Create JWT token
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-      expiresIn: '7d'
-    });
 
     res.json({
       id: user.id,
@@ -188,14 +156,11 @@ router.post('/login', loginLimiter, loginValidation, validate, async (req, res) 
       email: user.email,
       role: user.role,
       status: user.status,
-      token
+      token: authData.session.access_token
     });
   } catch (error) {
     console.error("Login Error:", error);
-    res.status(500).json({ 
-      message: 'Server error during login',
-      error: error.message
-    });
+    res.status(500).json({ message: 'Server error during login' });
   }
 });
 
@@ -351,84 +316,29 @@ router.post('/forgot-password', async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: 'Email is required' });
 
-    const { data: user, error: fetchError } = await supabase
-      .from('users')
-      .select('id, name')
-      .eq('email', email)
-      .single();
-
-    if (fetchError || !user) {
-      // Security: Don't reveal if user exists, but we'll return 200 anyway
-      return res.json({ message: 'If an account exists with that email, a reset link has been sent.' });
-    }
-
-    // Generate token
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
-    const resetTokenExpires = new Date(Date.now() + 3600000).toISOString(); // 1 hour
-
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ reset_token: resetTokenHash, reset_token_expires: resetTokenExpires })
-      .eq('id', user.id);
-
-    if (updateError) throw updateError;
-
-    // FOR DEVELOPMENT: Log the link to console since no email provider is set
-    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
-    console.log(`[PASSWORD RESET] Link for ${email}: ${resetUrl}`);
-
-    res.json({ 
-      message: 'If an account exists with that email, a reset link has been sent.',
-      // In production, NEVER return this. For this task, we'll return it so the user can test easily.
-      debug_link: process.env.NODE_ENV === 'production' ? null : resetUrl 
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password`
     });
+
+    if (error) return res.status(400).json({ message: error.message });
+
+    res.json({ message: 'If an account exists, a reset link has been sent to your email.' });
   } catch (error) {
     console.error('[FORGOT PASSWORD ERROR]', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// @desc    Reset password
-// @route   POST /api/auth/reset-password/:token
-// @access  Public
-router.post('/reset-password/:token', async (req, res) => {
+// @desc    Reset password (session based, from email link)
+// @route   POST /api/auth/reset-password
+// @access  Private (Auth session required from link)
+router.post('/reset-password', protect, async (req, res) => {
   try {
     const { password } = req.body;
-    const { token } = req.params;
+    
+    const { error } = await supabase.auth.updateUser({ password });
 
-    const resetTokenHash = crypto.createHash('sha256').update(token).digest('hex');
-
-    const { data: user, error: fetchError } = await supabase
-      .from('users')
-      .select('id, reset_token_expires')
-      .eq('reset_token', resetTokenHash)
-      .single();
-
-    if (fetchError || !user) {
-      return res.status(400).json({ message: 'Invalid or expired token' });
-    }
-
-    // Check if token expired
-    if (new Date(user.reset_token_expires) < new Date()) {
-      return res.status(400).json({ message: 'Token has expired' });
-    }
-
-    // Hash new password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Update user and clear token
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ 
-        password: hashedPassword, 
-        reset_token: null, 
-        reset_token_expires: null 
-      })
-      .eq('id', user.id);
-
-    if (updateError) throw updateError;
+    if (error) return res.status(400).json({ message: error.message });
 
     res.json({ message: 'Password reset successful. You can now log in.' });
   } catch (error) {

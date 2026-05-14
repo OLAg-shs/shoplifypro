@@ -4,7 +4,6 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 
 const ResetPassword = () => {
-  const { token } = useParams();
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -18,19 +17,28 @@ const ResetPassword = () => {
     if (password !== confirmPassword) {
       return setError('Passwords do not match');
     }
-    if (password.length < 8) {
-      return setError('Password must be at least 8 characters');
+    
+    // Extract token from URL hash (Supabase format)
+    const hash = window.location.hash;
+    const params = new URLSearchParams(hash.replace('#', '?'));
+    const token = params.get('access_token');
+
+    if (!token) {
+      return setError('Invalid or expired reset link. Please request a new one.');
     }
 
     setLoading(true);
     setError('');
     
     try {
-      await api.post(`/auth/reset-password/${token}`, { password });
+      await api.post('/auth/reset-password', 
+        { password },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       setSuccess(true);
       setTimeout(() => navigate('/login/buyer'), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid or expired reset link. Please request a new one.');
+      setError(err.response?.data?.message || 'Error updating password.');
     } finally {
       setLoading(false);
     }

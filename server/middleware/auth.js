@@ -1,4 +1,3 @@
-const jwt = require('jsonwebtoken');
 const { supabase } = require('../supabaseClient');
 
 // ── protect ───────────────────────────────────────────────────────────────────
@@ -14,12 +13,16 @@ const protect = async (req, res, next) => {
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const { data: authUser, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !authUser.user) {
+      return res.status(401).json({ message: 'Not authorized, session invalid or expired' });
+    }
 
     const { data: user, error } = await supabase
       .from('users')
       .select('id, name, email, role, status, is_verified')
-      .eq('id', decoded.id)
+      .eq('id', authUser.user.id)
       .single();
 
     if (error || !user) {
