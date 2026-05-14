@@ -140,7 +140,36 @@ router.post('/checkout', protect, async (req, res) => {
       return res.status(400).json({ message: 'Cart is empty' });
     }
 
-    // Group items by store_id
+    if (!payment_reference) {
+      return res.status(400).json({ message: 'Missing payment reference' });
+    }
+
+    // 1. Verify Payment with Paystack
+    const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
+    if (!paystackSecret) {
+      console.warn('PAYSTACK_SECRET_KEY not set! Skipping strict verification for development purposes.');
+    } else {
+      const paystackRes = await fetch(`https://api.paystack.co/transaction/verify/${payment_reference}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${paystackSecret}`
+        }
+      });
+      
+      const paystackData = await paystackRes.json();
+      
+      if (!paystackData.status || paystackData.data.status !== 'success') {
+        return res.status(400).json({ message: 'Payment verification failed' });
+      }
+
+      // Check if amount matches (Paystack amount is in kobo/cents)
+      const expectedAmount = Math.round(total_amount * 100);
+      if (paystackData.data.amount < expectedAmount) {
+        return res.status(400).json({ message: 'Payment amount mismatch' });
+      }
+    }
+
+    // 2. Group items by store_id
     const storeGroups = {};
     items.forEach(item => {
       const storeId = item.store_id || item.stores?.id; // Depends on how product was fetched
@@ -207,6 +236,51 @@ router.post('/checkout', protect, async (req, res) => {
   } catch (error) {
     console.error("[CHECKOUT ERROR]", error);
     res.status(500).json({ message: 'Server error during checkout' });
+  }
+});
+
+// @desc    Update order status
+// @route   PUT /api/orders/:id/status
+// @access  Private (Store Owner only)
+router.put('/:id/status', protect, async (req, res) => {
+  try {
+    const { order_status } = req.body;
+    
+    // Validate status
+    const validStatuses = ['pending', 'processing', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
+    if (!validStatuses.includes(order_status)) {
+      return res.status(400).json({ message: 'Invalid order status' });
+    }
+
+    // Get order and store owner
+    const { data: order, error: fetchError } = await supabase
+      .from('orders')
+      .select('id, stores(owner_id)')
+      .eq('id', req.params.id)
+      .single();
+
+    if (fetchError || !order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Only the store owner (or admin) can update the status
+    if (order.stores.owner_id !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to update this order' });
+    }
+
+    const { data: updatedOrder, error: updateError } = await supabase
+      .from('orders')
+      .update({ order_status, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+    
+    res.json(updatedOrder);
+  } catch (error) {
+    console.error("[UPDATE ORDER STATUS ERROR]", error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

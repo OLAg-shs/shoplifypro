@@ -13,6 +13,7 @@ import Checkout from './pages/Checkout';
 import SellerDashboard from './pages/SellerDashboard';
 import BuyerDashboard from './pages/BuyerDashboard';
 import AgentDashboard from './pages/AgentDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import ProductManagement from './pages/ProductManagement';
 import OrderTracking from './pages/OrderTracking';
 import StoreBuilder from './pages/StoreBuilder';
@@ -101,6 +102,17 @@ function App() {
 
           {/* ── Orders (role-based layout) ── */}
           <Route path="/orders/tracking" element={<OrdersWrapper />} />
+          
+          {/* ── Admin Routes ── */}
+          <Route path="/admin/dashboard" element={
+            <ProtectedRoute>
+              {user?.role === 'admin' ? (
+                <PublicPage><AdminDashboard /></PublicPage>
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )}
+            </ProtectedRoute>
+          } />
 
           {/* ── Fallback ── */}
           <Route path="*" element={<Navigate to="/" replace />} />
