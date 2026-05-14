@@ -97,12 +97,12 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1.75rem;
-  border-radius: 8px;
+  gap: 0.75rem;
+  padding: 0.875rem 2rem;
+  border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   border: 1px solid transparent;
   font-family: 'Inter', sans-serif;
   font-size: 1rem;
@@ -112,11 +112,13 @@ h1, h2, h3, h4, h5, h6 {
 .btn-primary {
   background-color: var(--primary-accent);
   color: white;
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2);
 }
 
 .btn-primary:hover {
   background-color: #1d4ed8;
-  transform: translateY(-1px);
+  transform: translateY(-3px);
+  box-shadow: 0 20px 25px -5px rgba(37, 99, 235, 0.3);
 }
 
 .btn-secondary {
@@ -127,6 +129,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .btn-secondary:hover {
   background-color: var(--bg-subtle);
+  transform: translateY(-2px);
 }
 
 /* Auth Pages */
@@ -590,4 +593,47 @@ nav.scrolled {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* Premium Redesign Utilities */
+@keyframes slideRight {
+  from { transform: translateX(-50px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-slide-right { animation: slideRight 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-scale-in { animation: scaleIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+.shimmer-text {
+  background: linear-gradient(90deg, #94a3b8 0%, #ffffff 50%, #94a3b8 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 4s linear infinite;
+}
+
+.bento-card {
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.bento-card:hover {
+  transform: translateY(-8px) scale(1.01);
+  background: rgba(255,255,255,0.03);
+  border-color: rgba(255,255,255,0.1);
+  box-shadow: 0 30px 60px -12px rgba(0,0,0,0.5);
+}
+
+.hero-gradient {
+  background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.1) 0%, transparent 70%);
 }

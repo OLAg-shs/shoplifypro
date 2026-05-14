@@ -46,18 +46,26 @@ const Header = () => {
   };
 
   const navStyle = ({ isActive }) => ({
-    color: isActive ? 'var(--primary)' : 'var(--text-muted)',
+    color: isActive ? '#38bdf8' : '#94a3b8',
     textDecoration: 'none',
-    fontWeight: isActive ? 600 : 500,
-    transition: 'color 0.2s ease',
-    fontSize: '0.95rem',
+    fontWeight: isActive ? 700 : 500,
+    transition: 'all 0.3s ease',
+    fontSize: '0.9rem',
+    letterSpacing: '0.01em'
   });
 
   return (
-    <nav className={scrolled ? 'scrolled' : ''}>
+    <nav className={scrolled ? 'scrolled' : ''} style={{
+      background: scrolled ? 'rgba(2, 6, 23, 0.9)' : 'transparent',
+      borderBottom: scrolled ? '1px solid rgba(255,255,255,0.05)' : 'none',
+      padding: '0 4rem',
+      height: scrolled ? '70px' : '90px'
+    }}>
       {/* Logo */}
-      <Link to="/" className="logo" style={{ color: 'var(--text-main)' }}>
-        <ShoppingBag size={22} style={{ color: 'var(--primary)' }} />
+      <Link to="/" className="logo" style={{ color: 'white', fontSize: '1.4rem' }}>
+        <div style={{ width: '32px', height: '32px', background: '#2563eb', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+          <ShoppingBag size={18} />
+        </div>
         Eagle Choice
       </Link>
 
