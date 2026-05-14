@@ -29,7 +29,10 @@ import DashboardLayout from './components/DashboardLayout';
 
 // ── Role-based dashboard selector ─────────────────────────────────────────────
 const DashboardSelector = () => {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const userStr = localStorage.getItem('user');
+  let user = {};
+  try { user = JSON.parse(userStr || '{}'); } catch (e) { user = {}; }
+  
   switch (user.role) {
     case 'seller': return <Navigate to="/seller/dashboard" replace />;
     case 'agent':  return <PublicPage><AgentDashboard /></PublicPage>;
@@ -56,7 +59,10 @@ const SellerPage = ({ children, roles = ['seller'] }) => (
 
 // ── Orders Wrapper (Role-based layout) ─────────────────────────────────────────
 const OrdersWrapper = () => {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const userStr = localStorage.getItem('user');
+  let user = {};
+  try { user = JSON.parse(userStr || '{}'); } catch (e) { user = {}; }
+  
   if (user.role === 'seller') {
     return (
       <ProtectedRoute allowedRoles={['seller']}>
@@ -73,6 +79,10 @@ const OrdersWrapper = () => {
 
 // ── App Router ────────────────────────────────────────────────────────────────
 function App() {
+  const userStr = localStorage.getItem('user');
+  let user = {};
+  try { user = JSON.parse(userStr || '{}'); } catch (e) { user = {}; }
+
   return (
     <Router>
       <div className="app-container">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Search, Star, ArrowLeft, Package, Loader, AlertCircle, Store, ChevronRight } from 'lucide-react';
 import { api } from '../utils/api';
 import { useCart } from '../context/CartContext';
@@ -96,7 +96,7 @@ const PublicStorefront = () => {
   const [activeCategory, setActiveCategory] = useState('All');
   
   const { cartCount, cartTotal } = useCart();
-  const navigate = require('react-router-dom').useNavigate();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchStore = async () => {
