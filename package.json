@@ -2,10 +2,6 @@
   "name": "shoplify-pro-root",
   "version": "1.0.0",
   "private": true,
-  "workspaces": [
-    "client",
-    "server"
-  ],
   "scripts": {
     "client-install": "npm install --prefix client",
     "server-install": "npm install --prefix server",
