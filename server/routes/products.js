@@ -36,6 +36,36 @@ router.get('/', async (req, res) => {
   }
 });
 
+// @desc    Get seller's own products (scoped to their store)
+// @route   GET /api/products/mine
+// @access  Private (Seller only)
+router.get('/mine', protect, authorize('seller'), async (req, res) => {
+  try {
+    // Get seller's store first
+    const { data: store } = await supabase
+      .from('stores')
+      .select('id')
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (!store) {
+      return res.json([]); // No store yet — return empty, not an error
+    }
+
+    const { data: products, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('store_id', store.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json(products || []);
+  } catch (error) {
+    console.error('[GET /products/mine ERROR]', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // @desc    Get product by ID
 // @route   GET /api/products/:id
 // @access  Public
@@ -69,19 +99,15 @@ router.post('/', protect, authorize('seller'), async (req, res) => {
   try {
     const { name, description, price, compare_price, stock, sku, category, tags, images } = req.body;
     
-    // Get user's store
+    // Get user's store (store does NOT need to be published to add products)
     const { data: store, error: storeError } = await supabase
       .from('stores')
-      .select('id, is_published')
+      .select('id')
       .eq('owner_id', req.user.id)
       .single();
 
     if (storeError || !store) {
-      return res.status(400).json({ message: 'You need to create a store first' });
-    }
-    
-    if (!store.is_published) {
-      return res.status(400).json({ message: 'You need to publish your store first' });
+      return res.status(400).json({ message: 'You need to create a store first before adding products.' });
     }
     
     // Check if SKU already exists

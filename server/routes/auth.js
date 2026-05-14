@@ -2,14 +2,54 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
 const { supabase } = require('../supabaseClient');
 const { protect, authorize } = require('../middleware/auth');
+const rateLimit = require('express-rate-limit');
+const { body, validationResult } = require('express-validator');
 
-// @desc    Register user
-// @route   POST /api/auth/register
-// @access  Public
-router.post('/register', async (req, res) => {
+// ── Rate Limiters ─────────────────────────────────────────────────────────────
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: { message: 'Too many login attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3,
+  message: { message: 'Too many accounts created from this IP. Please try again in an hour.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// ── Validation Middleware ─────────────────────────────────────────────────────
+const validate = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: errors.array()[0].msg });
+  }
+  next();
+};
+
+const registerValidation = [
+  body('name').trim().notEmpty().withMessage('Name is required').isLength({ min: 2, max: 80 }).withMessage('Name must be 2–80 characters'),
+  body('email').trim().isEmail().withMessage('Valid email is required').normalizeEmail(),
+  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+    .matches(/[A-Z]/).withMessage('Password must contain an uppercase letter')
+    .matches(/[0-9]/).withMessage('Password must contain a number'),
+  body('role').optional().isIn(['buyer', 'seller']).withMessage('Role must be buyer or seller'),
+];
+
+const loginValidation = [
+  body('email').trim().isEmail().withMessage('Valid email is required').normalizeEmail(),
+  body('password').notEmpty().withMessage('Password is required'),
+];
+
+
+// @route POST /api/auth/register
+router.post('/register', registerLimiter, registerValidation, validate, async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
@@ -73,10 +113,21 @@ router.post('/register', async (req, res) => {
       throw insertError;
     }
 
-    // Create JWT token
-    const token = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET, {
-      expiresIn: '7d'
-    });
+    // 🔐 SECURITY: Pending sellers do NOT receive a JWT on registration.
+    // They must wait for admin approval before they can log in.
+    if (newUser.status === 'pending') {
+      return res.status(201).json({
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        status: 'pending',
+        message: 'Registration successful! Your seller account is pending admin approval. You will be notified once approved.',
+      });
+    }
+
+    // Buyers get immediate access with a token
+    const token = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     res.status(201).json({
       id: newUser.id,
@@ -84,29 +135,23 @@ router.post('/register', async (req, res) => {
       email: newUser.email,
       role: newUser.role,
       status: newUser.status,
-      token
+      token,
     });
   } catch (error) {
-    console.error("Registration Error:", error);
-    res.status(500).json({ 
-      message: 'Server error during registration',
-      error: error.message,
-      details: error.details || 'No details'
-    });
+    console.error('[REGISTER ERROR]', error);
+    res.status(500).json({ message: 'Server error during registration' });
   }
 });
 
-// @desc    Authenticate user & get token
-// @route   POST /api/auth/login
-// @access  Public
-router.post('/login', async (req, res) => {
+// @route POST /api/auth/login
+router.post('/login', loginLimiter, loginValidation, validate, async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check for user
+    // Fetch user with only needed fields (password for compare, role for JWT)
     const { data: user, error: fetchError } = await supabase
       .from('users')
-      .select('*')
+      .select('id, name, email, password, role, status')
       .eq('email', email)
       .single();
 
@@ -203,59 +248,78 @@ router.get('/admin/pending-sellers', protect, authorize('admin'), async (req, re
 // @access  Private (Admin only)
 router.put('/admin/seller/:id', protect, authorize('admin'), async (req, res) => {
   try {
-    const { action } = req.body; // 'approve' or 'reject'
-    
+    const { action } = req.body;
+
     if (!action || !['approve', 'reject'].includes(action)) {
       return res.status(400).json({ message: 'Invalid action. Use "approve" or "reject"' });
     }
-    
+
     const { data: user, error: fetchError } = await supabase
       .from('users')
-      .select('*')
+      .select('id, name, email, role, status')
       .eq('id', req.params.id)
       .single();
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      throw fetchError;
-    }
+    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.role !== 'seller') return res.status(400).json({ message: 'User is not a seller' });
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    if (user.role !== 'seller') {
-      return res.status(400).json({ message: 'User is not a seller' });
-    }
-    
-    const updateData = {};
-    if (action === 'approve') {
-      updateData.status = 'active';
-    } else {
-      updateData.status = 'rejected';
-    }
-    
+    const newStatus = action === 'approve' ? 'active' : 'rejected';
+
     const { data: updatedUser, error: updateError } = await supabase
       .from('users')
-      .update(updateData)
+      .update({ status: newStatus })
       .eq('id', req.params.id)
-      .select()
+      .select('id, name, email, status')
       .single();
 
-    if (updateError) {
-      throw updateError;
+    if (updateError) throw updateError;
+
+    // ── AUTO STORE CREATION ───────────────────────────────────────────────────
+    // When a seller is approved, automatically create their default store.
+    let storeCreated = false;
+    if (action === 'approve') {
+      // Check if store already exists (idempotent)
+      const { data: existingStore } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('owner_id', user.id)
+        .single();
+
+      if (!existingStore) {
+        const slug = user.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-store';
+        const { error: storeError } = await supabase
+          .from('stores')
+          .insert([{
+            name: `${user.name}'s Store`,
+            description: 'Welcome to my store! Edit this in your Store Builder.',
+            slug,
+            owner_id: user.id,
+            branding: {
+              primaryColor: '#2563eb',
+              secondaryColor: '#f1f5f9',
+              backgroundColor: '#ffffff',
+              textColor: '#0f172a',
+              fontFamily: 'Inter, sans-serif',
+              layoutStyle: 'modern',
+            },
+            settings: {},
+            is_published: false,
+            is_verified: false,
+          }]);
+
+        if (!storeError) storeCreated = true;
+        else console.error('[AUTO STORE CREATION ERROR]', storeError);
+      }
     }
 
-    res.json({ 
-      message: `Seller ${action}ed successfully`,
-      user: {
-        id: updatedUser.id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        status: updatedUser.status
-      }
+    res.json({
+      message: `Seller ${action}d successfully`,
+      storeAutoCreated: storeCreated,
+      user: updatedUser,
     });
   } catch (error) {
-    console.error(error);
+    console.error('[ADMIN APPROVE SELLER ERROR]', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
