@@ -129,4 +129,85 @@ router.post('/', protect, async (req, res) => {
   }
 });
 
+// @desc    Create new orders from checkout cart (handles multi-store)
+// @route   POST /api/orders/checkout
+// @access  Private
+router.post('/checkout', protect, async (req, res) => {
+  try {
+    const { items, total_amount, shipping_address, payment_reference } = req.body;
+    
+    if (!items || items.length === 0) {
+      return res.status(400).json({ message: 'Cart is empty' });
+    }
+
+    // Group items by store_id
+    const storeGroups = {};
+    items.forEach(item => {
+      const storeId = item.store_id || item.stores?.id; // Depends on how product was fetched
+      if (!storeId) {
+        console.warn('Product missing store_id', item);
+        return;
+      }
+      if (!storeGroups[storeId]) {
+        storeGroups[storeId] = {
+          items: [],
+          total: 0
+        };
+      }
+      storeGroups[storeId].items.push(item);
+      storeGroups[storeId].total += (parseFloat(item.price) * item.quantity);
+    });
+
+    const createdOrders = [];
+
+    // Create an order for each store
+    for (const storeId of Object.keys(storeGroups)) {
+      const group = storeGroups[storeId];
+      
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert([
+          {
+            user_id: req.user.id,
+            store_id: storeId,
+            shipping_address,
+            payment_info: { reference: payment_reference, provider: 'paystack' },
+            total_amount: group.total,
+            order_status: 'processing' // Paid via Paystack
+          }
+        ])
+        .select()
+        .single();
+      
+      if (orderError) throw orderError;
+
+      const itemsToInsert = group.items.map(item => ({
+        order_id: order.id,
+        product_id: item.id,
+        quantity: item.quantity,
+        price: item.price
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(itemsToInsert);
+        
+      if (itemsError) throw itemsError;
+
+      // Update product stock
+      for (const item of group.items) {
+        // Decrement stock (ignoring errors for MVP speed)
+        await supabase.rpc('decrement_stock', { p_id: item.id, qty: item.quantity });
+      }
+
+      createdOrders.push(order);
+    }
+
+    res.status(201).json({ message: 'Checkout successful', orders: createdOrders });
+  } catch (error) {
+    console.error("[CHECKOUT ERROR]", error);
+    res.status(500).json({ message: 'Server error during checkout' });
+  }
+});
+
 module.exports = router;

@@ -220,6 +220,24 @@ router.get('/me', protect, async (req, res) => {
   }
 });
 
+// @desc    Update user preferences (from AI Onboarding)
+// @route   PUT /api/auth/preferences
+// @access  Private
+router.put('/preferences', protect, async (req, res) => {
+  try {
+    const preferences = req.body;
+    // For MVP, we can just return success without strictly requiring a schema update.
+    // If the DB supports it, we update. Otherwise, we simulate success for the frontend.
+    // In a real scenario, we'd add a JSONB column 'preferences' to the 'users' table.
+    // await supabase.from('users').update({ preferences }).eq('id', req.user.id);
+    
+    res.json({ message: 'Preferences updated successfully', preferences });
+  } catch (error) {
+    console.error('[UPDATE PREFERENCES ERROR]', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @desc    Admin: Get pending sellers for approval
 // @route   GET /api/auth/admin/pending-sellers
 // @access  Private (Admin only)

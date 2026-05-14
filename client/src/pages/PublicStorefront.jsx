@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ShoppingCart, Search, Star, ArrowLeft, Package, Loader, AlertCircle, Store, ChevronRight } from 'lucide-react';
 import { api } from '../utils/api';
+import { useCart } from '../context/CartContext';
 
 // ── Product Card ──────────────────────────────────────────────────────────────
 const ProductCard = ({ product, branding }) => {
   const [hovered, setHovered] = useState(false);
+  const { addToCart } = useCart();
   const primary = branding?.primaryColor || '#2563eb';
   const bg = branding?.backgroundColor || '#ffffff';
   const text = branding?.textColor || '#0f172a';
@@ -65,7 +67,13 @@ const ProductCard = ({ product, branding }) => {
             )}
           </div>
           {product.stock > 0 ? (
-            <button style={{ padding: '8px 16px', borderRadius: '100px', border: 'none', background: primary, color: 'white', fontSize: '0.82rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'opacity 0.2s ease', opacity: hovered ? 1 : 0.85 }}>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                addToCart(product);
+              }}
+              style={{ padding: '8px 16px', borderRadius: '100px', border: 'none', background: primary, color: 'white', fontSize: '0.82rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'opacity 0.2s ease', opacity: hovered ? 1 : 0.85 }}
+            >
               <ShoppingCart size={13} /> Add
             </button>
           ) : (
@@ -86,7 +94,9 @@ const PublicStorefront = () => {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
-  const [cartCount, setCartCount] = useState(0);
+  
+  const { cartCount, cartTotal } = useCart();
+  const navigate = require('react-router-dom').useNavigate();
 
   useEffect(() => {
     const fetchStore = async () => {
@@ -170,11 +180,14 @@ const PublicStorefront = () => {
               About
             </a>
           </div>
-          <button style={{
-            position: 'relative', background: `${primary}15`, border: 'none', color: primary,
-            width: '40px', height: '40px', borderRadius: '12px', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
+          <button 
+            onClick={() => navigate('/checkout')}
+            style={{
+              position: 'relative', background: `${primary}15`, border: 'none', color: primary,
+              width: '40px', height: '40px', borderRadius: '12px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}
+          >
             <ShoppingCart size={18} />
             {cartCount > 0 && (
               <div style={{ position: 'absolute', top: '-5px', right: '-5px', width: '18px', height: '18px', borderRadius: '50%', background: primary, color: 'white', fontSize: '0.65rem', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{cartCount}</div>

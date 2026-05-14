@@ -7,6 +7,7 @@ import LoginBuyer from './pages/LoginBuyer';
 import LoginSeller from './pages/LoginSeller';
 import Register from './pages/Register';
 import PublicStorefront from './pages/PublicStorefront';
+import Checkout from './pages/Checkout';
 
 // Dashboard pages
 import SellerDashboard from './pages/SellerDashboard';
@@ -81,6 +82,7 @@ function App() {
           <Route path="/login/seller" element={<PublicPage><LoginSeller /></PublicPage>} />
           <Route path="/register"     element={<PublicPage><Register /></PublicPage>} />
           <Route path="/store/:slug"  element={<PublicStorefront />} />
+          <Route path="/checkout"     element={<ProtectedRoute><PublicPage><Checkout /></PublicPage></ProtectedRoute>} />
 
           {/* ── Universal Dashboard (role-based) ── */}
           <Route path="/dashboard" element={

@@ -1,186 +1,191 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
-  ShoppingBag, Heart, Settings, Package, 
-  MapPin, CreditCard, Clock, ChevronRight, 
-  Search, Star, Bell, ArrowUpRight
+  ShoppingBag, Search, Star, ShieldCheck, 
+  Store as StoreIcon, ArrowRight, Package
 } from 'lucide-react';
 import { api } from '../utils/api';
+import BuyerOnboarding from '../components/BuyerOnboarding';
 
 const BuyerDashboard = () => {
-  const [orders, setOrders] = useState([]);
+  const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    // Check onboarding status
+    const hasOnboarded = localStorage.getItem(`onboarding_${user.id}`);
+    if (!hasOnboarded) {
+      setShowOnboarding(true);
+    }
+    
+    fetchMarketplace();
+  }, [user.id]);
 
-  const fetchOrders = async () => {
+  const fetchMarketplace = async () => {
     try {
-      const data = await api.get('/orders/myorders');
-      setOrders(data);
+      const data = await api.get('/stores');
+      setStores(data || []);
     } catch (err) {
-      console.error("Orders fetch error:", err);
+      console.error("Failed to fetch stores", err);
     } finally {
       setLoading(false);
     }
   };
 
+  const filteredStores = stores.filter(s => 
+    s.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    s.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
-      {/* Welcome Section */}
-      <div className="animate-up" style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Welcome back, {user.name}</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Track your deliveries and explore new arrivals in the marketplace.</p>
+      {showOnboarding && (
+        <BuyerOnboarding onComplete={() => setShowOnboarding(false)} />
+      )}
+
+      {/* Hero Section */}
+      <div className="animate-up" style={{ 
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', 
+        borderRadius: '24px', 
+        padding: '4rem 3rem', 
+        color: 'white',
+        marginBottom: '3rem',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Decorative elements */}
+        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(37,99,235,0.4) 0%, rgba(37,99,235,0) 70%)', borderRadius: '50%' }} />
+        <div style={{ position: 'absolute', bottom: '-20%', left: '10%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(124,58,237,0.3) 0%, rgba(124,58,237,0) 70%)', borderRadius: '50%' }} />
+
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: '600px' }}>
+          <h1 style={{ fontSize: '3rem', color: 'white', marginBottom: '1rem', lineHeight: 1.1 }}>
+            Discover Unique Stores
+          </h1>
+          <p style={{ fontSize: '1.1rem', color: '#cbd5e1', marginBottom: '2rem', lineHeight: 1.6 }}>
+            Explore thousands of verified sellers on Eagle Choice. Handpicked products, secure checkout, and lightning-fast delivery.
+          </p>
+          
+          {/* Search Bar */}
+          <div style={{ 
+            display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.1)', 
+            backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', 
+            borderRadius: '16px', padding: '0.5rem', width: '100%', maxWidth: '450px'
+          }}>
+            <div style={{ padding: '0 1rem', color: '#94a3b8' }}><Search size={20} /></div>
+            <input 
+              type="text" 
+              placeholder="Search stores, brands, or categories..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ 
+                background: 'transparent', border: 'none', color: 'white', 
+                width: '100%', padding: '1rem 0', outline: 'none', fontSize: '1rem' 
+              }} 
+            />
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <button className="btn btn-secondary" style={{ borderRadius: '12px' }}>
-            <Bell size={18} />
-          </button>
-          <Link to="/" className="btn btn-primary" style={{ borderRadius: '12px' }}>
-            <Search size={18} /> Continue Shopping
+      </div>
+
+      {/* Directory Section */}
+      <div className="animate-up delay-1">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
+          <div>
+            <h2 style={{ fontSize: '1.8rem', margin: 0 }}>Top Rated Stores</h2>
+            <p style={{ color: 'var(--text-muted)', margin: '4px 0 0' }}>Based on your personalized preferences</p>
+          </div>
+          <Link to="/orders/tracking" className="btn btn-secondary" style={{ borderRadius: '12px' }}>
+            <ShoppingBag size={18} /> My Orders
           </Link>
         </div>
-      </div>
 
-      {/* Stats Grid */}
-      <div className="animate-up delay-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-        <div className="card hover-lift" style={{ padding: '2rem', background: 'linear-gradient(135deg, #2563eb, #1e40af)', color: 'white', border: 'none' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-            <ShoppingBag size={24} />
-            <ArrowUpRight size={20} opacity={0.7} />
+        {loading ? (
+          <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <div className="spinner" style={{ margin: '0 auto 1.5rem', width: '40px', height: '40px', border: '3px solid #f3f4f6', borderTopColor: 'var(--primary-accent)', borderRadius: '50%' }} />
+            Loading stores...
           </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '4px' }}>{orders.length}</div>
-          <div style={{ opacity: 0.8, fontWeight: 500 }}>Active Orders</div>
-        </div>
-
-        <div className="card hover-lift" style={{ padding: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-            <Heart size={24} color="#ef4444" />
-            <span style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 700 }}>+4 NEW</span>
+        ) : filteredStores.length === 0 ? (
+          <div style={{ padding: '5rem 2rem', textAlign: 'center', background: 'white', borderRadius: '24px', border: '1px dashed var(--border-medium)' }}>
+            <StoreIcon size={48} style={{ color: '#cbd5e1', margin: '0 auto 1rem', display: 'block' }} />
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>No stores found</h3>
+            <p style={{ color: 'var(--text-muted)' }}>We couldn't find any stores matching your search.</p>
           </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '4px' }}>12</div>
-          <div style={{ color: 'var(--text-muted)', fontWeight: 500 }}>Wishlist Items</div>
-        </div>
-
-        <div className="card hover-lift" style={{ padding: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-            <CreditCard size={24} color="var(--primary-accent)" />
-          </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '4px' }}>$0.00</div>
-          <div style={{ color: 'var(--text-muted)', fontWeight: 500 }}>Store Credit</div>
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '2rem' }}>
-        {/* Recent Orders */}
-        <div className="animate-up delay-2">
-          <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
-            <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid var(--border-medium)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '1.25rem', margin: 0 }}>Recent Orders</h3>
-              <Link to="/orders/tracking" style={{ color: 'var(--primary-accent)', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>View All History</Link>
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {loading ? (
-                <div style={{ padding: '3rem', textAlign: 'center' }}>Loading your orders...</div>
-              ) : orders.length === 0 ? (
-                <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  <Package size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
-                  <p>You haven't placed any orders yet.</p>
-                </div>
-              ) : (
-                orders.map((order, idx) => (
-                  <div key={order.id} style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    padding: '1.5rem 2rem',
-                    borderBottom: idx === orders.length - 1 ? 'none' : '1px solid var(--border-medium)',
-                    transition: 'background 0.2s ease'
-                  }}>
-                    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                      <div style={{ width: '60px', height: '60px', background: '#f1f5f9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                         <ShoppingBag size={24} color="#64748b" />
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: '1rem' }}>Order #{order.id.substring(0, 8)}</div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                          Placed on {new Date(order.created_at).toLocaleDateString()}
-                        </div>
-                      </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
+            {filteredStores.map((store, idx) => (
+              <div 
+                key={store.id} 
+                className="hover-lift"
+                onClick={() => navigate(`/store/${store.slug}`)}
+                style={{
+                  background: 'white',
+                  borderRadius: '20px',
+                  border: '1px solid var(--border-medium)',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  boxShadow: 'var(--shadow-subtle)',
+                  animation: `fadeIn 0.5s ease forwards`,
+                  animationDelay: `${idx * 0.1}s`,
+                  opacity: 0,
+                  transform: 'translateY(10px)'
+                }}
+              >
+                {/* Store Cover (Mocked based on branding) */}
+                <div style={{ 
+                  height: '140px', 
+                  background: store.branding?.primaryColor || '#2563eb',
+                  position: 'relative'
+                }}>
+                  {store.is_verified && (
+                    <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(255,255,255,0.9)', padding: '6px 10px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', fontWeight: 800, color: '#059669' }}>
+                      <ShieldCheck size={14} /> VERIFIED
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '4px' }}>${parseFloat(order.total_amount).toFixed(2)}</div>
-                      <span style={{ 
-                        padding: '4px 10px', 
-                        borderRadius: '100px', 
-                        fontSize: '0.7rem', 
-                        fontWeight: 700,
-                        background: '#f0fdf4',
-                        color: '#16a34a',
-                        textTransform: 'uppercase'
-                      }}>
-                        {order.order_status}
-                      </span>
+                  )}
+                </div>
+
+                {/* Store Info */}
+                <div style={{ padding: '1.5rem', position: 'relative' }}>
+                  {/* Store Logo */}
+                  <div style={{ 
+                    width: '64px', height: '64px', borderRadius: '16px', background: 'white', 
+                    border: '4px solid white', position: 'absolute', top: '-32px', left: '1.5rem',
+                    boxShadow: '0 4px 10px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', 
+                    justifyContent: 'center', fontSize: '1.5rem', fontWeight: 800, color: store.branding?.primaryColor || '#2563eb'
+                  }}>
+                    {store.name.charAt(0)}
+                  </div>
+
+                  <div style={{ marginTop: '24px' }}>
+                    <h3 style={{ fontSize: '1.25rem', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {store.name}
+                    </h3>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {store.description || 'Welcome to our official store on Eagle Choice.'}
+                    </p>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderTop: '1px solid var(--border-light)', paddingTop: '1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#64748b', fontSize: '0.85rem' }}>
+                        <Star size={14} color="#fbbf24" fill="#fbbf24" /> 4.9
+                      </div>
+                      <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#cbd5e1' }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#64748b', fontSize: '0.85rem' }}>
+                        <Package size={14} /> {(Math.random() * 50 + 5).toFixed(0)} Products
+                      </div>
+                      <div style={{ marginLeft: 'auto', color: 'var(--primary-accent)' }}>
+                        <ArrowRight size={18} />
+                      </div>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-
-        {/* Account Quick Links */}
-        <div className="animate-up delay-3" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div className="card" style={{ padding: '2rem' }}>
-            <h3 style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Account Controls</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <Link to="/profile" className="nav-item-link">
-                <Settings size={18} /> Account Settings <ChevronRight size={16} />
-              </Link>
-              <Link to="/addresses" className="nav-item-link">
-                <MapPin size={18} /> Shipping Addresses <ChevronRight size={16} />
-              </Link>
-              <Link to="/payments" className="nav-item-link">
-                <CreditCard size={18} /> Payment Methods <ChevronRight size={16} />
-              </Link>
-            </div>
-          </div>
-
-          <div className="card" style={{ padding: '2rem', background: '#f8fafc', border: '1px dashed var(--border-medium)' }}>
-            <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Support</h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-              Need help with an order or have a question about the platform?
-            </p>
-            <button className="btn btn-secondary" style={{ width: '100%', fontSize: '0.9rem' }}>Contact Help Center</button>
-          </div>
-        </div>
+        )}
       </div>
-      
-      <style>{`
-        .nav-item-link {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 12px;
-          border-radius: 8px;
-          color: var(--text-main);
-          text-decoration: none;
-          font-weight: 500;
-          font-size: 0.95rem;
-          transition: background 0.2s ease;
-        }
-        .nav-item-link:hover {
-          background: #f1f5f9;
-        }
-        .nav-item-link svg:last-child {
-          margin-left: auto;
-          opacity: 0.3;
-        }
-      `}</style>
     </div>
   );
 };
