@@ -1,17 +1,18 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Package, 
-  ShoppingBag, 
-  TrendingUp, 
-  Settings, 
-  Sparkles, 
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingBag,
+  TrendingUp,
+  Settings,
+  Sparkles,
   CreditCard,
   LogOut,
   Store,
-  ChevronRight
 } from 'lucide-react';
+import AIAssistant from './AIAssistant';
+
 
 const DashboardLayout = ({ children }) => {
   const navigate = useNavigate();
@@ -88,8 +89,12 @@ const DashboardLayout = ({ children }) => {
           {children}
         </div>
       </main>
+
+      {/* ── AI Assistant (persistent floating widget) ── */}
+      <AIAssistant />
     </div>
   );
 };
 
 export default DashboardLayout;
+
