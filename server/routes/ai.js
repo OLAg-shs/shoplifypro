@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { supabase } = require('../supabaseClient');
 const { protect, authorize } = require('../middleware/auth');
+const { HfInference } = require('@huggingface/inference');
+const fs = require('fs');
+const path = require('path');
+
+const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
 // @desc    Generate a store theme using AI-like logic based on a prompt
 // @route   POST /api/ai/generate-theme
@@ -176,6 +181,75 @@ router.get('/trending', protect, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @desc    Process image (Background Removal or Upscaling)
+// @route   POST /api/ai/process-image
+// @access  Private (Seller only)
+router.post('/process-image', protect, authorize('seller'), async (req, res) => {
+  try {
+    if (!req.files || !req.files.image) {
+      return res.status(400).json({ message: 'No image uploaded.' });
+    }
+
+    const { action } = req.body; // 'remove-bg' or 'upscale'
+    const imageFile = req.files.image;
+    const imageData = fs.readFileSync(imageFile.tempFilePath);
+
+    let result;
+    if (action === 'remove-bg') {
+      console.log('[AI] Removing background...');
+      result = await hf.imageToImage({
+        model: 'briaai/RMBG-1.4',
+        inputs: new Blob([imageData]),
+      });
+    } else if (action === 'upscale') {
+      console.log('[AI] Upscaling image...');
+      result = await hf.imageToImage({
+        model: 'stabilityai/stable-diffusion-x4-upscaler',
+        inputs: new Blob([imageData]),
+      });
+    } else {
+      return res.status(400).json({ message: 'Invalid action. Use "remove-bg" or "upscale".' });
+    }
+
+    // Convert Blob back to Buffer for response
+    const arrayBuffer = await result.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    res.set('Content-Type', 'image/png');
+    res.send(buffer);
+  } catch (error) {
+    console.error('[AI PROCESS ERROR]', error);
+    res.status(500).json({ message: 'AI processing failed.', error: error.message });
+  }
+});
+
+// @desc    Generate Unique AI Ad background
+// @route   POST /api/ai/generate-ad
+// @access  Private (Seller only)
+router.post('/generate-ad', protect, authorize('seller'), async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) {
+      return res.status(400).json({ message: 'Prompt is required for ad generation.' });
+    }
+
+    console.log('[AI] Generating ad background for prompt:', prompt);
+    const result = await hf.textToImage({
+      model: 'stabilityai/stable-diffusion-3-medium',
+      inputs: prompt,
+    });
+
+    const arrayBuffer = await result.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    res.set('Content-Type', 'image/png');
+    res.send(buffer);
+  } catch (error) {
+    console.error('[AI AD GEN ERROR]', error);
+    res.status(500).json({ message: 'Ad generation failed.', error: error.message });
   }
 });
 

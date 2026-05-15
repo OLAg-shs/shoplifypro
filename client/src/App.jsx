@@ -22,6 +22,7 @@ import StoreBuilder from './pages/StoreBuilder';
 import CardGenerator from './pages/CardGenerator';
 import Analytics from './pages/Analytics';
 import SellerSettings from './pages/SellerSettings';
+import ProductStudio from './pages/ProductStudio';
 
 // Layout components
 import Header from './components/Header';
@@ -110,6 +111,7 @@ function App() {
           {/* ── Seller Routes (all inside DashboardLayout) ── */}
           <Route path="/seller/dashboard" element={<SellerPage><SellerDashboard /></SellerPage>} />
           <Route path="/products/manage"  element={<SellerPage><ProductManagement /></SellerPage>} />
+          <Route path="/product-studio"   element={<SellerPage><ProductStudio /></SellerPage>} />
           <Route path="/store-builder"    element={<SellerPage><StoreBuilder /></SellerPage>} />
           <Route path="/card-generator"   element={<SellerPage><CardGenerator /></SellerPage>} />
           <Route path="/analytics"        element={<SellerPage><Analytics /></SellerPage>} />

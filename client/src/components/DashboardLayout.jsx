@@ -54,8 +54,11 @@ const DashboardLayout = ({ children }) => {
           </NavLink>
 
           <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '2rem 0 1rem 0', paddingLeft: '1rem' }}>AI Tools</div>
+          <NavLink to="/product-studio" className={({isActive}) => isActive ? 'sidebar-link active' : 'sidebar-link'}>
+            <Sparkles size={20} /> Product Studio <span className="badge badge-ai" style={{ marginLeft: 'auto' }}>AI</span>
+          </NavLink>
           <NavLink to="/store-builder" className={({isActive}) => isActive ? 'sidebar-link active' : 'sidebar-link'}>
-            <Sparkles size={20} /> AI Store Builder <span className="badge badge-ai" style={{ marginLeft: 'auto' }}>AI</span>
+            <Store size={20} /> AI Store Builder
           </NavLink>
           <NavLink to="/card-generator" className={({isActive}) => isActive ? 'sidebar-link active' : 'sidebar-link'}>
             <CreditCard size={20} /> Ad Generator
