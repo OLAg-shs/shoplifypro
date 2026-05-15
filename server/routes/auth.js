@@ -125,14 +125,43 @@ router.post('/login', loginLimiter, loginValidation, validate, async (req, res) 
     }
 
     // 2. Fetch User metadata (role, status)
-    const { data: user, error: fetchError } = await supabase
+    let { data: user, error: fetchError } = await supabase
       .from('users')
       .select('id, name, email, role, status')
       .eq('id', authData.user.id)
       .single();
 
+    // ── AUTO-HEALING MECHANISM ──────────────────────────────────────────────
+    // If the user authenticated successfully but their profile is missing 
+    // (a "ghost" account from before triggers were added), we fix it silently.
     if (fetchError || !user) {
-      return res.status(400).json({ message: 'User metadata not found' });
+      console.log(`[AUTH HEAL] Recovering missing metadata for user: ${authData.user.email}`);
+      
+      const metadata = authData.user.user_metadata || {};
+      const name = metadata.name || authData.user.email.split('@')[0];
+      const role = metadata.role || 'buyer';
+      
+      // For MVP ease, we set everyone to active. You can change seller to 'pending' later.
+      const status = 'active'; 
+
+      const { data: recoveredUser, error: healError } = await supabase
+        .from('users')
+        .insert([{
+          id: authData.user.id,
+          email: authData.user.email,
+          name: name,
+          role: role,
+          status: status
+        }])
+        .select('id, name, email, role, status')
+        .single();
+
+      if (healError) {
+        console.error('[AUTH HEAL ERROR]', healError);
+        return res.status(500).json({ message: 'Server error: Unable to recover user profile.' });
+      }
+      
+      user = recoveredUser;
     }
 
     // 3. Check Status
