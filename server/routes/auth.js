@@ -51,7 +51,18 @@ router.post('/register', registerLimiter, registerValidation, validate, async (r
   try {
     const { name, email, password, role } = req.body;
 
-    // 1. Sign Up via Supabase Auth
+    // 1. Check if user already exists in public.users (by email)
+    const { data: existingMeta } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    if (existingMeta) {
+      return res.status(400).json({ message: 'An account with this email already exists.' });
+    }
+
+    // 2. Sign Up via Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -61,12 +72,20 @@ router.post('/register', registerLimiter, registerValidation, validate, async (r
     });
 
     if (authError) {
+      // If user exists in Auth but not in public.users (unlikely but possible)
+      if (authError.message.includes('already registered')) {
+         return res.status(400).json({ message: 'This email is already registered. Please try logging in.' });
+      }
       return res.status(400).json({ message: authError.message });
+    }
+
+    if (!authData.user) {
+      return res.status(400).json({ message: 'Registration failed: No user data returned from authentication provider.' });
     }
 
     const userId = authData.user.id;
 
-    // 2. Check if user meta exists (sometimes signUp returns success even if user existed but was unverified)
+    // 3. Double check if user meta exists by ID (safety)
     const { data: existingUser } = await supabase
       .from('users')
       .select('id')
@@ -81,7 +100,7 @@ router.post('/register', registerLimiter, registerValidation, validate, async (r
     let status = 'active'; 
     if (role === 'seller') status = 'pending';
 
-    // 3. Insert into public.users
+    // 4. Insert into public.users
     const { data: newUser, error: insertError } = await supabase
       .from('users')
       .insert([
@@ -98,8 +117,8 @@ router.post('/register', registerLimiter, registerValidation, validate, async (r
       .single();
 
     if (insertError) {
-      // Cleanup auth user if meta insert fails? Usually handled by triggers, but let's be careful.
-      throw insertError;
+      console.error('[DATABASE INSERT ERROR]', insertError);
+      return res.status(400).json({ message: insertError.message || 'Database error saving new user' });
     }
 
     res.status(201).json({
