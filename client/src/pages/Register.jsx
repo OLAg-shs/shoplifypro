@@ -140,8 +140,8 @@ const Register = () => {
         {/* Right Side: Form */}
         <div style={{ padding: '4rem' }}>
           <div style={{ marginBottom: '2.5rem' }}>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.5rem' }}>Create Account</h2>
-            <p style={{ color: '#64748b', fontWeight: 500 }}>Enter your details below to get started.</p>
+            <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', color: 'white' }}>Create <span style={{ color: 'var(--primary)' }}>Account</span></h2>
+            <p style={{ color: 'var(--auth-muted)', fontWeight: 500 }}>Enter your details below to get started.</p>
           </div>
 
           {error && (
@@ -170,78 +170,75 @@ const Register = () => {
                 <div 
                   onClick={() => setFormData(prev => ({...prev, role: 'buyer'}))}
                   style={{
-                    padding: '1.5rem',
+                    padding: '1.25rem',
                     borderRadius: '16px',
                     border: '1px solid',
-                    borderColor: formData.role === 'buyer' ? '#2563eb' : 'rgba(255,255,255,0.05)',
-                    background: formData.role === 'buyer' ? 'rgba(37, 99, 235, 0.05)' : 'rgba(255,255,255,0.02)',
+                    borderColor: formData.role === 'buyer' ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                    background: formData.role === 'buyer' ? 'rgba(37, 99, 235, 0.1)' : 'rgba(255,255,255,0.02)',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                     textAlign: 'center'
                   }}
                 >
-                  <ShoppingBag size={24} color={formData.role === 'buyer' ? '#3b82f6' : '#64748b'} style={{ marginBottom: '10px' }} />
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: formData.role === 'buyer' ? 'white' : '#94a3b8' }}>Buyer</div>
+                  <ShoppingBag size={24} color={formData.role === 'buyer' ? 'var(--primary)' : '#64748b'} style={{ marginBottom: '10px' }} />
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: formData.role === 'buyer' ? 'white' : 'var(--auth-muted)' }}>Buyer</div>
                 </div>
                 <div 
                   onClick={() => setFormData(prev => ({...prev, role: 'seller'}))}
                   style={{
-                    padding: '1.5rem',
+                    padding: '1.25rem',
                     borderRadius: '16px',
                     border: '1px solid',
-                    borderColor: formData.role === 'seller' ? '#2563eb' : 'rgba(255,255,255,0.05)',
-                    background: formData.role === 'seller' ? 'rgba(37, 99, 235, 0.05)' : 'rgba(255,255,255,0.02)',
+                    borderColor: formData.role === 'seller' ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                    background: formData.role === 'seller' ? 'rgba(37, 99, 235, 0.1)' : 'rgba(255,255,255,0.02)',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                     textAlign: 'center'
                   }}
                 >
-                  <Briefcase size={24} color={formData.role === 'seller' ? '#3b82f6' : '#64748b'} style={{ marginBottom: '10px' }} />
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: formData.role === 'seller' ? 'white' : '#94a3b8' }}>Seller</div>
+                  <Briefcase size={24} color={formData.role === 'seller' ? 'var(--primary)' : '#64748b'} style={{ marginBottom: '10px' }} />
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: formData.role === 'seller' ? 'white' : 'var(--auth-muted)' }}>Seller</div>
                 </div>
               </div>
 
               {/* Name */}
               <div style={{ position: 'relative' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#94a3b8', marginBottom: '8px' }}>Full Name</label>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--auth-muted)', marginBottom: '8px' }}>Full Name</label>
                 <div style={{ position: 'relative' }}>
-                  <User size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                  <User size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', zIndex: 2 }} />
                   <input 
                     type="text" name="name" value={formData.name} onChange={handleChange} required 
                     placeholder="John Doe"
-                    style={{ 
-                      width: '100%', padding: '12px 12px 12px 48px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '1rem'
-                    }} 
+                    className="input-field"
+                    style={{ paddingLeft: '48px' }}
                   />
                 </div>
               </div>
 
               {/* Email */}
               <div style={{ position: 'relative' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#94a3b8', marginBottom: '8px' }}>Email Address</label>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--auth-muted)', marginBottom: '8px' }}>Email Address</label>
                 <div style={{ position: 'relative' }}>
-                  <Mail size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                  <Mail size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', zIndex: 2 }} />
                   <input 
                     type="email" name="email" value={formData.email} onChange={handleChange} required 
                     placeholder="john@example.com"
-                    style={{ 
-                      width: '100%', padding: '12px 12px 12px 48px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '1rem'
-                    }} 
+                    className="input-field"
+                    style={{ paddingLeft: '48px' }}
                   />
                 </div>
               </div>
 
               {/* Password */}
               <div style={{ position: 'relative' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#94a3b8', marginBottom: '8px' }}>Password</label>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--auth-muted)', marginBottom: '8px' }}>Password</label>
                 <div style={{ position: 'relative' }}>
-                  <Lock size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                  <Lock size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', zIndex: 2 }} />
                   <input 
                     type="password" name="password" value={formData.password} onChange={handleChange} required minLength="6"
                     placeholder="••••••••"
-                    style={{ 
-                      width: '100%', padding: '12px 12px 12px 48px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '1rem'
-                    }} 
+                    className="input-field"
+                    style={{ paddingLeft: '48px' }}
                   />
                 </div>
               </div>
@@ -250,8 +247,9 @@ const Register = () => {
             <button 
               type="submit" 
               disabled={loading}
+              className="btn btn-primary"
               style={{ 
-                width: '100%', height: '56px', borderRadius: '14px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white', fontWeight: 700, fontSize: '1.1rem', marginTop: '2.5rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 10px 20px -5px rgba(37, 99, 235, 0.4)'
+                width: '100%', height: '56px', borderRadius: '14px', marginTop: '2.5rem', fontSize: '1.1rem'
               }}
             >
               {loading ? 'Processing...' : <>Create Empire <ArrowRight size={20} /></>}
@@ -259,8 +257,8 @@ const Register = () => {
           </form>
 
           <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-            <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
-              Already a member? <Link to="/login/buyer" style={{ color: '#3b82f6', fontWeight: 700, textDecoration: 'none' }}>Sign In</Link>
+            <p style={{ color: 'var(--auth-muted)', fontSize: '0.9rem' }}>
+              Already a member? <Link to="/login/buyer" style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>Sign In</Link>
             </p>
           </div>
         </div>
