@@ -51,18 +51,7 @@ router.post('/register', registerLimiter, registerValidation, validate, async (r
   try {
     const { name, email, password, role } = req.body;
 
-    // 1. Check if user already exists in public.users (by email)
-    const { data: existingMeta } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', email)
-      .single();
-
-    if (existingMeta) {
-      return res.status(400).json({ message: 'An account with this email already exists.' });
-    }
-
-    // 2. Sign Up via Supabase Auth
+    // 1. Sign Up via Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
