@@ -695,13 +695,15 @@ h1, h2, h3, h4, h5, h6 {
 .dashboard-layout {
   display: flex;
   min-height: 100vh;
-  background-color: var(--bg-subtle);
+  background-color: var(--bg-dark);
 }
 
 .sidebar {
   width: 280px;
-  background: white;
-  border-right: 1px solid var(--border-medium);
+  background: var(--auth-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid var(--glass-border);
   padding: 2rem 1.5rem;
   display: flex;
   flex-direction: column;
@@ -724,8 +726,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .sidebar-link:hover, .sidebar-link.active {
-  background: var(--bg-subtle);
-  color: var(--primary-accent);
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
 }
 
 .dashboard-content {
@@ -744,9 +746,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .badge-ai {
-  background: #f5f3ff;
-  color: #7c3aed;
-  border: 1px solid #ddd6fe;
+  background: rgba(124, 58, 237, 0.15);
+  color: #a78bfa;
+  border: 1px solid rgba(124, 58, 237, 0.3);
 }
 
 /* Radio Options */

@@ -29,11 +29,11 @@ const DashboardLayout = ({ children }) => {
       {/* Sidebar */}
       <aside className="sidebar">
         <div style={{ marginBottom: '3rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--primary-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
             <Store size={22} />
           </div>
           <div>
-            <h2 style={{ fontSize: '1.1rem', margin: 0, letterSpacing: '-0.02em' }}>Eagle Choice</h2>
+            <h2 style={{ fontSize: '1.1rem', margin: 0, letterSpacing: '-0.02em', color: 'white' }}>Eagle Choice</h2>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>SELLER ADMIN</span>
           </div>
         </div>
@@ -70,13 +70,13 @@ const DashboardLayout = ({ children }) => {
           </NavLink>
         </div>
 
-        <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border-medium)', paddingTop: '1.5rem' }}>
+        <div style={{ marginTop: 'auto', borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem', paddingLeft: '0.5rem' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', color: 'var(--primary)' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', color: 'white' }}>
               {user.name?.charAt(0) || 'S'}
             </div>
             <div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>{user.name || 'Seller'}</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'white' }}>{user.name || 'Seller'}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Free Plan</div>
             </div>
           </div>
