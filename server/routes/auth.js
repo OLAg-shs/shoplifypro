@@ -100,35 +100,16 @@ router.post('/register', registerLimiter, registerValidation, validate, async (r
     let status = 'active'; 
     if (role === 'seller') status = 'pending';
 
-    // 4. Insert into public.users
-    const { data: newUser, error: insertError } = await supabase
-      .from('users')
-      .insert([
-        {
-          id: userId,
-          name,
-          email,
-          role: role || 'buyer',
-          status,
-          is_verified: false
-        }
-      ])
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error('[DATABASE INSERT ERROR]', insertError);
-      return res.status(400).json({ message: insertError.message || 'Database error saving new user' });
-    }
-
+    // 3. The Database Trigger (handle_new_user) now handles the public.users insert automatically!
+    // We just need to wait a tiny bit to ensure it's finished or just return success.
+    
     res.status(201).json({
-      id: newUser.id,
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-      status: newUser.status,
-      token: authData.session?.access_token,
-      message: role === 'seller' ? 'Seller account pending approval.' : 'Registration successful.'
+      id: userId,
+      name: name,
+      email: authData.user.email,
+      role: role || 'buyer',
+      token: authData.session?.access_token, // Added token for immediate login
+      message: 'Registration successful! Redirecting to dashboard...'
     });
   } catch (error) {
     console.error('[REGISTER ERROR]', error);
