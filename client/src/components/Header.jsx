@@ -1,25 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, Menu, X, User, LogOut, LayoutDashboard, Store, Package, Zap } from 'lucide-react';
 
 const Header = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState(null);
+  const [userName, setUserName] = useState('');
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [scrolled, setScrolled] = useState(false);
-
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      setScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   useEffect(() => {
-    // Check auth state on every route change
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
     
@@ -28,6 +29,7 @@ const Header = () => {
       try {
         const user = JSON.parse(userStr);
         setUserRole(user.role);
+        setUserName(user.name);
       } catch (e) {
         setUserRole(null);
       }
@@ -35,6 +37,7 @@ const Header = () => {
       setIsAuthenticated(false);
       setUserRole(null);
     }
+    setMobileMenuOpen(false);
   }, [location]);
 
   const handleLogout = () => {
@@ -45,70 +48,97 @@ const Header = () => {
     navigate('/');
   };
 
-  const navStyle = ({ isActive }) => ({
-    color: isActive ? '#38bdf8' : '#94a3b8',
-    textDecoration: 'none',
-    fontWeight: isActive ? 700 : 500,
-    transition: 'all 0.3s ease',
-    fontSize: '0.9rem',
-    letterSpacing: '0.01em'
-  });
+  const navLinks = [
+    { name: 'Home', path: '/' },
+    ...(isAuthenticated ? [{ name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={16} /> }] : []),
+    ...(isAuthenticated && userRole === 'seller' ? [
+      { name: 'Builder', path: '/store-builder', icon: <Store size={16} /> },
+      { name: 'Ad Cards', path: '/card-generator', icon: <Zap size={16} /> },
+      { name: 'Products', path: '/products/manage', icon: <Package size={16} /> },
+    ] : []),
+  ];
 
   return (
-    <nav className={scrolled ? 'scrolled' : ''} style={{
-      background: scrolled ? 'rgba(2, 6, 23, 0.95)' : 'transparent',
-      borderBottom: scrolled ? '1px solid rgba(255,255,255,0.1)' : 'none',
-      padding: '0 4rem',
-      height: scrolled ? '70px' : '90px',
-      backdropFilter: scrolled ? 'blur(20px)' : 'none',
-    }}>
-      {/* Logo */}
-      <Link to="/" className="logo" style={{ color: 'white', fontSize: '1.4rem', textShadow: '0 0 20px rgba(37, 99, 235, 0.4)' }}>
-        <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #2563eb, #38bdf8)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)' }}>
-          <ShoppingBag size={20} />
-        </div>
-        <span style={{ 
-          background: 'linear-gradient(to right, #ffffff, #e2e8f0)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          fontWeight: 800
-        }}>Eagle Choice</span>
-      </Link>
+    <header className={`main-header ${scrolled ? 'scrolled' : ''}`}>
+      <div className="header-container">
+        {/* Logo Section */}
+        <Link to="/" className="header-logo">
+          <div className="logo-icon-wrapper">
+            <ShoppingBag size={22} />
+          </div>
+          <span className="logo-text">Eagle Choice</span>
+        </Link>
 
-      {/* Nav Links */}
-      <div className="nav-links">
-        <NavLink to="/" end style={navStyle}>Home</NavLink>
-        
-        {isAuthenticated && (
-          <NavLink to="/dashboard" style={navStyle}>Dashboard</NavLink>
-        )}
+        {/* Desktop Navigation */}
+        <nav className="desktop-nav">
+          {navLinks.map((link) => (
+            <NavLink 
+              key={link.path} 
+              to={link.path} 
+              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            >
+              {link.icon}
+              <span>{link.name}</span>
+            </NavLink>
+          ))}
+        </nav>
 
-        {isAuthenticated && userRole === 'seller' && (
-          <>
-            <NavLink to="/store-builder" style={navStyle}>Store Builder</NavLink>
-            <NavLink to="/card-generator" style={navStyle}>Ad Cards</NavLink>
-            <NavLink to="/products/manage" style={navStyle}>Products</NavLink>
-          </>
-        )}
-      </div>
+        {/* Action Buttons */}
+        <div className="header-actions">
+          {!isAuthenticated ? (
+            <>
+              <div className="auth-links-desktop">
+                <Link to="/login/buyer" className="auth-link">Buyer Login</Link>
+                <Link to="/login/seller" className="auth-link">Seller Login</Link>
+              </div>
+              <Link to="/register" className="btn-premium">
+                <span>Join Now</span>
+                <Zap size={16} className="zap-icon" />
+              </Link>
+            </>
+          ) : (
+            <div className="user-profile-menu">
+              <span className="user-greeting">Hi, {userName.split(' ')[0]}</span>
+              <button onClick={handleLogout} className="btn-icon-only" title="Logout">
+                <LogOut size={20} />
+              </button>
+            </div>
+          )}
 
-      {/* Auth Buttons */}
-      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        {!isAuthenticated ? (
-          <>
-            <NavLink to="/login/buyer" style={navStyle}>Buyer Login</NavLink>
-            <NavLink to="/login/seller" style={navStyle}>Seller Login</NavLink>
-            <Link to="/register" className="btn btn-primary">
-              Register
-            </Link>
-          </>
-        ) : (
-          <button onClick={handleLogout} className="btn btn-secondary">
-            Logout
+          {/* Mobile Menu Toggle */}
+          <button 
+            className="mobile-toggle" 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-        )}
+        </div>
       </div>
-    </nav>
+
+      {/* Mobile Navigation Drawer */}
+      <div className={`mobile-drawer ${mobileMenuOpen ? 'open' : ''}`}>
+        <div className="mobile-nav-links">
+          {navLinks.map((link) => (
+            <NavLink 
+              key={link.path} 
+              to={link.path} 
+              className="mobile-nav-item"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {link.icon}
+              <span>{link.name}</span>
+            </NavLink>
+          ))}
+          {!isAuthenticated && (
+            <div className="mobile-auth-section">
+              <Link to="/login/buyer" className="mobile-nav-item">Buyer Login</Link>
+              <Link to="/login/seller" className="mobile-nav-item">Seller Login</Link>
+              <Link to="/register" className="btn-premium mobile-btn">Start Building</Link>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
   );
 };
 

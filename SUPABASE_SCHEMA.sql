@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS public.users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL, -- hashed password
+    password VARCHAR(255), -- hashed password (nullable if using Supabase Auth)
     role VARCHAR(50) NOT NULL DEFAULT 'buyer', -- admin, seller, buyer, agent
     status VARCHAR(50) NOT NULL DEFAULT 'pending', -- pending, active, rejected, suspended
     is_verified BOOLEAN DEFAULT FALSE,
@@ -213,6 +213,50 @@ CREATE INDEX IF NOT EXISTS idx_agents_store ON public.agents(store_id);
 -- If you decide to use Supabase Auth in the future, you would need to:
 --   1. Switch to using Supabase Auth for user management (sign up, login, etc.)
 --   2. Then enable RLS and use auth.uid() in policies.
+
+-- ===========================================
+-- AUTOMATED STORE STATS TRIGGERS
+-- ===========================================
+
+-- Function to recalculate store stats
+CREATE OR REPLACE FUNCTION public.recalculate_store_stats()
+RETURNS TRIGGER AS $$
+DECLARE
+    target_store_id UUID;
+BEGIN
+    -- Determine which store to update
+    IF (TG_OP = 'DELETE') THEN
+        target_store_id := OLD.store_id;
+    ELSE
+        target_store_id := NEW.store_id;
+    END IF;
+
+    IF target_store_id IS NOT NULL THEN
+        UPDATE public.stores
+        SET stats = jsonb_build_object(
+            'totalProducts', (SELECT count(*) FROM public.products WHERE store_id = target_store_id),
+            'totalOrders', (SELECT count(*) FROM public.orders WHERE store_id = target_store_id),
+            'totalRevenue', (SELECT COALESCE(sum(total_amount), 0) FROM public.orders WHERE store_id = target_store_id AND order_status != 'cancelled'),
+            'lastOrderDate', (SELECT max(created_at) FROM public.orders WHERE store_id = target_store_id)
+        )
+        WHERE id = target_store_id;
+    END IF;
+    
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger for orders
+DROP TRIGGER IF EXISTS trigger_update_store_stats_orders ON public.orders;
+CREATE TRIGGER trigger_update_store_stats_orders
+AFTER INSERT OR UPDATE OR DELETE ON public.orders
+FOR EACH ROW EXECUTE FUNCTION public.recalculate_store_stats();
+
+-- Trigger for products
+DROP TRIGGER IF EXISTS trigger_update_store_stats_products ON public.products;
+CREATE TRIGGER trigger_update_store_stats_products
+AFTER INSERT OR DELETE ON public.products
+FOR EACH ROW EXECUTE FUNCTION public.recalculate_store_stats();
 
 -- ===========================================
 -- TRIGGERS FOR UPDATING TIMESTAMPS
