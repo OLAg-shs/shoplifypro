@@ -5,6 +5,7 @@ import { api } from '../utils/api';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const { token: pathToken } = useParams();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,13 +19,13 @@ const ResetPassword = () => {
       return setError('Passwords do not match');
     }
     
-    // Extract token from URL hash (Supabase format)
+    // Extract token from URL hash (Supabase format) or path params
     const hash = window.location.hash;
-    const params = new URLSearchParams(hash.replace('#', '?'));
-    const token = params.get('access_token');
+    const hashParams = new URLSearchParams(hash.replace('#', '?'));
+    const token = hashParams.get('access_token') || pathToken;
 
     if (!token) {
-      return setError('Invalid or expired reset link. Please request a new one.');
+      return setError('Invalid or expired reset link. Please request a new one from the Forgot Password page.');
     }
 
     setLoading(true);
@@ -38,7 +39,7 @@ const ResetPassword = () => {
       setSuccess(true);
       setTimeout(() => navigate('/login/buyer'), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Error updating password.');
+      setError(err.response?.data?.message || 'Error updating password. The link may have expired.');
     } finally {
       setLoading(false);
     }
@@ -46,17 +47,17 @@ const ResetPassword = () => {
 
   if (success) {
     return (
-      <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-        <div className="card animate-up" style={{ maxWidth: '450px', width: '100%', textAlign: 'center', padding: '3rem 2rem' }}>
-          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+      <div className="auth-container">
+        <div className="auth-box animate-up" style={{ textAlign: 'center' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', border: '1px solid rgba(16,185,129,0.2)' }}>
             <CheckCircle size={32} style={{ color: '#10b981' }} />
           </div>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Password Updated!</h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
-            Your password has been successfully reset. You will be redirected to login in 3 seconds...
+          <h2 style={{ fontSize: '2rem', color: 'white', marginBottom: '1rem', letterSpacing: '-0.02em' }}>Success!</h2>
+          <p style={{ color: 'var(--auth-muted)', marginBottom: '2rem', fontSize: '1.1rem' }}>
+            Your password has been successfully reset. You will be redirected to login shortly...
           </p>
-          <Link to="/login/buyer" className="btn btn-primary" style={{ width: '100%', textDecoration: 'none', display: 'block' }}>
-            Go to Login Now
+          <Link to="/login/buyer" className="btn btn-primary" style={{ width: '100%', height: '56px', borderRadius: '14px' }}>
+            Back to Login
           </Link>
         </div>
       </div>
@@ -64,28 +65,47 @@ const ResetPassword = () => {
   }
 
   return (
-    <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-      <div className="card animate-up" style={{ maxWidth: '450px', width: '100%', padding: '3rem 2rem' }}>
-        <div style={{ marginBottom: '2.5rem' }}>
-          <h1 style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>Set New Password</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Choose a strong password to secure your account.</p>
+    <div className="auth-container">
+      {/* Background Orbs */}
+      <div style={{ position: 'absolute', top: '20%', right: '10%', width: '400px', height: '400px', background: 'rgba(37, 99, 235, 0.05)', borderRadius: '50%', filter: 'blur(100px)', zIndex: 0 }}></div>
+      
+      <div className="auth-box animate-up">
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <div style={{ 
+            display: 'inline-flex', 
+            width: '64px', 
+            height: '64px', 
+            borderRadius: '20px', 
+            background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(37, 99, 235, 0.05))', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            color: 'var(--primary)', 
+            marginBottom: '1.5rem',
+            border: '1px solid rgba(37, 99, 235, 0.2)'
+          }}>
+            <Lock size={32} />
+          </div>
+          <h2 style={{ fontSize: '2.25rem', fontWeight: 800, color: 'white', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
+            Set New <span style={{ color: 'var(--primary)' }}>Password</span>
+          </h2>
+          <p style={{ color: 'var(--auth-muted)', fontWeight: 500 }}>Choose a strong password to secure your account.</p>
         </div>
 
         <form onSubmit={handleSubmit}>
           {error && (
-            <div style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertCircle size={16} /> {error}
+            <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#f87171' }}>
+              <AlertCircle size={18} /> {error}
             </div>
           )}
 
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px' }}>New Password</label>
+          <div className="form-group">
+            <label>New Password</label>
             <div style={{ position: 'relative' }}>
-              <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <Lock size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', zIndex: 2 }} />
               <input 
                 type={showPassword ? "text" : "password"} 
                 className="input-field" 
-                style={{ paddingLeft: '40px', paddingRight: '40px' }} 
+                style={{ paddingLeft: '48px', paddingRight: '48px' }} 
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -94,21 +114,21 @@ const ResetPassword = () => {
               <button 
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', zIndex: 2 }}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          <div style={{ marginBottom: '2rem' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px' }}>Confirm New Password</label>
+          <div className="form-group">
+            <label>Confirm New Password</label>
             <div style={{ position: 'relative' }}>
-              <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <Lock size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', zIndex: 2 }} />
               <input 
                 type={showPassword ? "text" : "password"} 
                 className="input-field" 
-                style={{ paddingLeft: '40px' }} 
+                style={{ paddingLeft: '48px' }} 
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -120,12 +140,18 @@ const ResetPassword = () => {
           <button 
             type="submit" 
             className="btn btn-primary" 
-            style={{ width: '100%', height: '48px', fontSize: '1rem', display: 'flex', justifyContent: 'center' }}
+            style={{ width: '100%', height: '56px', marginTop: '1.5rem', borderRadius: '14px', fontSize: '1.05rem' }}
             disabled={loading}
           >
             {loading ? <Loader size={20} className="spinner" /> : 'Update Password'}
           </button>
         </form>
+        
+        <div style={{ marginTop: '2.5rem', textAlign: 'center' }}>
+          <Link to="/login/buyer" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--auth-muted)', textDecoration: 'none', fontSize: '0.9rem', justifyContent: 'center', fontWeight: 600 }}>
+             Back to Login
+          </Link>
+        </div>
       </div>
     </div>
   );

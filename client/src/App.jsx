@@ -96,6 +96,7 @@ function App() {
           <Route path="/register"     element={<PublicPage><Register /></PublicPage>} />
           <Route path="/forgot-password" element={<PublicPage><ForgotPassword /></PublicPage>} />
           <Route path="/reset-password/:token" element={<PublicPage><ResetPassword /></PublicPage>} />
+          <Route path="/reset-password" element={<PublicPage><ResetPassword /></PublicPage>} />
           <Route path="/store/:slug"  element={<PublicStorefront />} />
           <Route path="/checkout"     element={<ProtectedRoute><PublicPage><Checkout /></PublicPage></ProtectedRoute>} />
 
