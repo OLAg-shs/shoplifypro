@@ -6,21 +6,18 @@ import {
 import { removeBackground } from '@imgly/background-removal';
 import { api } from '../utils/api';
 
-const STUDIO_BACKGROUNDS = [
-  { id: 'transparent', name: 'Transparent', style: { background: 'url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYNgvwMDA/xVIMzIwMDAzMDKgS2BVA8GAwWgYjIaB2TCAnbFjDIfBiQEAsVwQ/7W6aLgAAAAASUVORK5CYII=)' } },
-  { id: 'pure-white',  name: 'Pure White',  style: { background: '#ffffff' } },
-  { id: 'soft-gray',   name: 'Soft Gray',   style: { background: '#f3f4f6' } },
-  { id: 'warm-sand',   name: 'Warm Sand',   style: { background: '#f5efe6' } },
-  { id: 'dark-slate',  name: 'Dark Slate',  style: { background: '#0f172a' } },
-  { id: 'neon-glow',   name: 'Neon Glow',   style: { background: 'linear-gradient(135deg, #7c3aed, #ec4899)' } },
-];
-
 const ProductStudio = () => {
   const [originalImage, setOriginalImage] = useState(null);
-  const [processedUrl, setProcessedUrl] = useState(null); // URL of transparent PNG
+  const [processedUrl, setProcessedUrl] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState('');
-  const [activeBg, setActiveBg] = useState(STUDIO_BACKGROUNDS[1]); // Default pure white
+  const [isError, setIsError] = useState(false);
+  
+  // Customizable Background
+  const [bgType, setBgType] = useState('transparent'); // 'transparent', 'solid', 'gradient'
+  const [bgColor, setBgColor] = useState('#ffffff');
+  const [bgGradient1, setBgGradient1] = useState('#7c3aed');
+  const [bgGradient2, setBgGradient2] = useState('#ec4899');
   
   // Create Product Modal State
   const [showModal, setShowModal] = useState(false);
@@ -39,27 +36,27 @@ const ProductStudio = () => {
     setOriginalImage(URL.createObjectURL(file));
     setProcessedUrl(null);
     setIsProcessing(true);
+    setIsError(false);
     setStatus('Initializing Neural Engine...');
 
     try {
       const config = {
-        publicPath: "https://static.imgly.com/@imgly/background-removal-data/1.5.5/dist/",
+        publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.4.3/dist/",
         progress: (key, current, total) => {
           const percent = Math.round((current / total) * 100);
-          setStatus(`Loading AI Model... ${percent}%`);
+          setStatus(`Downloading AI Models... ${percent}%`);
         }
       };
       
-      // Run local neural background removal
+      setStatus('Extracting subject... this may take a moment.');
       const blob = await removeBackground(file, config);
       const url = URL.createObjectURL(blob);
       setProcessedUrl(url);
       setStatus('');
     } catch (err) {
       console.error('BG Removal error:', err);
-      setStatus('Background removal failed. Please try a clearer image.');
-      // Fallback: just use the original image
-      setProcessedUrl(URL.createObjectURL(file));
+      setIsError(true);
+      setStatus('Background removal failed. The AI model could not be loaded. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -84,16 +81,16 @@ const ProductStudio = () => {
         canvas.height = 1080;
         
         // Draw background
-        if (activeBg.id === 'transparent') {
+        if (bgType === 'transparent') {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-        } else if (activeBg.style.background.includes('linear-gradient')) {
+        } else if (bgType === 'gradient') {
           const grd = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-          grd.addColorStop(0, "#7c3aed");
-          grd.addColorStop(1, "#ec4899");
+          grd.addColorStop(0, bgGradient1);
+          grd.addColorStop(1, bgGradient2);
           ctx.fillStyle = grd;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
         } else {
-          ctx.fillStyle = activeBg.style.background;
+          ctx.fillStyle = bgColor;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
@@ -104,8 +101,8 @@ const ProductStudio = () => {
         const x = (canvas.width - w) / 2;
         const y = (canvas.height - h) / 2;
         
-        // Add subtle drop shadow if not dark mode or transparent
-        if (activeBg.id !== 'transparent' && activeBg.id !== 'dark-slate' && activeBg.id !== 'neon-glow') {
+        // Add subtle drop shadow if not transparent
+        if (bgType !== 'transparent') {
           ctx.shadowColor = 'rgba(0,0,0,0.15)';
           ctx.shadowBlur = 40;
           ctx.shadowOffsetY = 20;
@@ -222,7 +219,9 @@ const ProductStudio = () => {
               ref={previewRef}
               style={{ 
                 width: '100%', height: '100%', 
-                ...activeBg.style,
+                background: bgType === 'transparent' ? 'url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYNgvwMDA/xVIMzIwMDAzMDKgS2BVA8GAwWgYjIaB2TCAnbFjDIfBiQEAsVwQ/7W6aLgAAAAASUVORK5CYII=)' 
+                  : bgType === 'gradient' ? `linear-gradient(135deg, ${bgGradient1}, ${bgGradient2})` 
+                  : bgColor,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'background 0.3s ease'
               }}
@@ -232,8 +231,7 @@ const ProductStudio = () => {
                 alt="Processed" 
                 style={{ 
                   maxWidth: '90%', maxHeight: '90%', objectFit: 'contain',
-                  filter: activeBg.id !== 'transparent' && activeBg.id !== 'dark-slate' && activeBg.id !== 'neon-glow' 
-                    ? 'drop-shadow(0 20px 40px rgba(0,0,0,0.15))' : 'none',
+                  filter: bgType !== 'transparent' ? 'drop-shadow(0 20px 40px rgba(0,0,0,0.15))' : 'none',
                   transition: 'filter 0.3s ease'
                 }} 
               />
@@ -246,23 +244,43 @@ const ProductStudio = () => {
           
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '1.5rem' }}>
             <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Studio Background</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              {STUDIO_BACKGROUNDS.map(bg => (
+            
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem' }}>
+              {['transparent', 'solid', 'gradient'].map(type => (
                 <button
-                  key={bg.id}
-                  onClick={() => setActiveBg(bg)}
-                  disabled={!processedUrl}
+                  key={type}
+                  onClick={() => setBgType(type)}
                   style={{
-                    padding: '12px 8px', borderRadius: '12px', border: activeBg.id === bg.id ? '2px solid var(--primary)' : '2px solid transparent',
-                    background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '0.8rem', fontWeight: 600, cursor: processedUrl ? 'pointer' : 'not-allowed',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', opacity: processedUrl ? 1 : 0.5, transition: 'all 0.2s'
+                    flex: 1, padding: '8px', borderRadius: '8px', 
+                    background: bgType === type ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                    color: bgType === type ? 'white' : 'var(--text-muted)',
+                    border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, textTransform: 'capitalize'
                   }}
                 >
-                  <div style={{ width: '100%', height: '40px', borderRadius: '6px', ...bg.style, border: '1px solid rgba(255,255,255,0.1)' }} />
-                  {bg.name}
+                  {type}
                 </button>
               ))}
             </div>
+
+            {bgType === 'solid' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'white', fontWeight: 600 }}>Color:</label>
+                <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} style={{ width: '100%', height: '40px', padding: 0, border: 'none', borderRadius: '8px', cursor: 'pointer' }} />
+              </div>
+            )}
+
+            {bgType === 'gradient' && (
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '0.85rem', color: 'white', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Start Color:</label>
+                  <input type="color" value={bgGradient1} onChange={e => setBgGradient1(e.target.value)} style={{ width: '100%', height: '40px', padding: 0, border: 'none', borderRadius: '8px', cursor: 'pointer' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '0.85rem', color: 'white', fontWeight: 600, display: 'block', marginBottom: '4px' }}>End Color:</label>
+                  <input type="color" value={bgGradient2} onChange={e => setBgGradient2(e.target.value)} style={{ width: '100%', height: '40px', padding: 0, border: 'none', borderRadius: '8px', cursor: 'pointer' }} />
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '1.5rem' }}>
