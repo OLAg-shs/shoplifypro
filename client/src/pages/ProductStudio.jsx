@@ -41,7 +41,8 @@ const ProductStudio = () => {
 
     try {
       const config = {
-        publicPath: "https://unpkg.com/@imgly/background-removal-data@1.4.3/dist/",
+        publicPath: "https://static.imgly.com/@imgly/background-removal-data/1.4.3/dist/",
+        fetchArgs: { mode: 'cors' },
         progress: (key, current, total) => {
           const percent = Math.round((current / total) * 100);
           setStatus(`Downloading AI Models... ${percent}%`);
