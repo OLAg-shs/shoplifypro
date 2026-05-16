@@ -58,7 +58,7 @@ const ProductManagement = () => {
       formData.append('image', newProduct.imageFile);
       formData.append('action', 'remove-bg');
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/ai/process-image`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/ai/v2/process-image`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

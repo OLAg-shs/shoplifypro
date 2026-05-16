@@ -223,10 +223,10 @@ router.get('/trending', protect, async (req, res) => {
 });
 
 // @desc    Process image (Background Removal or Upscaling)
-// @route   POST /api/ai/process-image
+// @route   POST /api/ai/v2/process-image
 // @access  Private (Seller only)
 // Note: This is now FREE for all sellers as requested
-router.post('/process-image', protect, authorize('seller'), async (req, res) => {
+router.post('/v2/process-image', protect, authorize('seller'), async (req, res) => {
   try {
     if (!req.files || !req.files.image) {
       return res.status(400).json({ message: 'No image uploaded.' });
