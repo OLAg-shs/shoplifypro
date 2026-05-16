@@ -236,7 +236,7 @@ router.post('/v2/process-image', protect, authorize('seller'), async (req, res) 
     const imageFile = req.files.image;
     const imageData = fs.readFileSync(imageFile.tempFilePath);
 
-    let modelId = 'briaai/RMBG-1.4'; 
+    let modelId = 'Zhengyi/RMBG-1.4'; // Non-gated community mirror
     if (action === 'upscale') {
       modelId = 'stabilityai/stable-diffusion-x4-upscaler';
     }
