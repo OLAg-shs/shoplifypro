@@ -60,15 +60,18 @@ const ProductStudio = () => {
           const url = URL.createObjectURL(blob);
           setProcessedUrl(url);
           setStatus('');
+          setIsProcessing(false);
           return; // Success!
+        } else {
+          console.warn('Server engine rejected request, falling back...');
         }
       } catch (serverErr) {
-        console.warn('Server engine busy, switching to Local Neural Engine...');
+        console.warn('Server connection failed, falling back to Local Neural Engine...');
       }
 
       // ── ENGINE 2: ON-DEVICE PRIVACY ENGINE (FAIL-SAFE) ────────────────────
-      // If server is down/404, we run the AI directly in the browser!
-      setStatus('Initializing Private Neural Engine (First load takes 15s)...');
+      // If server is down/404/401, we run the AI directly in the browser!
+      setStatus('Server busy. Activating Private Neural Engine...');
       
       const { pipeline, env } = await import('@xenova/transformers');
       // Set local model path for better reliability
