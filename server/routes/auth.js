@@ -132,16 +132,13 @@ router.post('/login', loginLimiter, loginValidation, validate, async (req, res) 
       .single();
 
     // ── AUTO-HEALING MECHANISM ──────────────────────────────────────────────
-    // If the user authenticated successfully but their profile is missing 
-    // (a "ghost" account from before triggers were added), we fix it silently.
-    if (fetchError || !user) {
+    // Only attempt to heal if the user specifically does NOT exist in public.users
+    if (fetchError && fetchError.code === 'PGRST116' || !user) {
       console.log(`[AUTH HEAL] Recovering missing metadata for user: ${authData.user.email}`);
       
       const metadata = authData.user.user_metadata || {};
       const name = metadata.name || authData.user.email.split('@')[0];
       const role = metadata.role || 'buyer';
-      
-      // For MVP ease, we set everyone to active. You can change seller to 'pending' later.
       const status = 'active'; 
 
       const { data: recoveredUser, error: healError } = await supabase
@@ -157,11 +154,30 @@ router.post('/login', loginLimiter, loginValidation, validate, async (req, res) 
         .single();
 
       if (healError) {
-        console.error('[AUTH HEAL ERROR]', healError);
-        return res.status(500).json({ message: 'Server error: Unable to recover user profile.' });
+        // If it fails because it actually DOES exist (race condition or weird caching)
+        if (healError.code === '23505') {
+           console.log(`[AUTH HEAL] User actually exists, skipping heal.`);
+           const { data: existingUser } = await supabase
+             .from('users')
+             .select('id, name, email, role, status')
+             .eq('id', authData.user.id)
+             .single();
+           user = existingUser;
+        } else {
+           console.error('[AUTH HEAL ERROR]', healError);
+           return res.status(500).json({ message: 'Server error: Unable to recover user profile. ' + healError.message });
+        }
+      } else {
+        user = recoveredUser;
       }
-      
-      user = recoveredUser;
+    } else if (fetchError) {
+       // If it's a different database error, don't try to heal, just report it
+       console.error('[FETCH USER ERROR]', fetchError);
+       return res.status(500).json({ message: 'Database error while fetching user profile.' });
+    }
+
+    if (!user) {
+       return res.status(500).json({ message: 'Critical error: User profile is still missing after heal attempt.' });
     }
 
     // 3. Check Status
