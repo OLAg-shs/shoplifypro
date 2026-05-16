@@ -244,13 +244,13 @@ router.post('/process-image', protect, authorize('seller'), async (req, res) => 
     console.log(`[AI] Processing ${action} using model: ${modelId}...`);
 
     // ── UNIVERSAL AI CONNECTOR ─────────────────────────────────────────────
-    // Direct fetch is more stable than the library for certain API Keys
+    // Using Base64 to ensure the image data is never corrupted during transfer
     const response = await fetch(
       `https://api-inference.huggingface.co/models/${modelId}`,
       {
         headers: { 
           Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/octet-stream" 
         },
         method: "POST",
         body: imageData,
@@ -261,15 +261,19 @@ router.post('/process-image', protect, authorize('seller'), async (req, res) => 
       const errorText = await response.text();
       console.error('[AI API ERROR]', errorText);
       
-      // If the model is still loading, tell the user to wait a second
       if (errorText.includes('loading')) {
-        return res.status(503).json({ message: 'AI Engine is warming up. Please try again in 20 seconds.' });
+        return res.status(503).json({ message: 'AI Engine is warming up. Please try again in 30 seconds.' });
       }
       
       throw new Error(`AI Engine responded with ${response.status}: ${errorText}`);
     }
 
-    const buffer = Buffer.from(await response.arrayBuffer());
+    const arrayBuffer = await response.arrayBuffer();
+    if (!arrayBuffer || arrayBuffer.byteLength < 100) {
+        throw new Error('AI returned an empty or invalid image.');
+    }
+    
+    const buffer = Buffer.from(arrayBuffer);
 
     res.set('Content-Type', 'image/png');
     res.send(buffer);
