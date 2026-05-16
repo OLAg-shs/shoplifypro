@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { 
   Sparkles, Upload, Image as ImageIcon, Wand2, Download, 
-  Loader2, CheckCircle, Plus, LayoutGrid, X
+  Loader2, CheckCircle, Plus, LayoutGrid, X, AlertCircle
 } from 'lucide-react';
 import { removeBackground } from '@imgly/background-removal';
 import { api } from '../utils/api';
@@ -41,7 +41,7 @@ const ProductStudio = () => {
 
     try {
       const config = {
-        publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.4.3/dist/",
+        publicPath: "https://unpkg.com/@imgly/background-removal-data@1.4.3/dist/",
         progress: (key, current, total) => {
           const percent = Math.round((current / total) * 100);
           setStatus(`Downloading AI Models... ${percent}%`);
@@ -56,7 +56,7 @@ const ProductStudio = () => {
     } catch (err) {
       console.error('BG Removal error:', err);
       setIsError(true);
-      setStatus('Background removal failed. The AI model could not be loaded. Please try again.');
+      setStatus(err.message || 'Background removal failed to load AI models.');
     } finally {
       setIsProcessing(false);
     }
@@ -194,7 +194,7 @@ const ProductStudio = () => {
         {/* Main Canvas Area */}
         <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
           
-          {!originalImage && !isProcessing && (
+          {!originalImage && !isProcessing && !isError && (
             <div style={{ textAlign: 'center' }}>
               <div style={{ width: '80px', height: '80px', background: 'rgba(99,102,241,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: 'var(--primary)' }}>
                 <Upload size={32} />
@@ -208,13 +208,30 @@ const ProductStudio = () => {
           )}
 
           {isProcessing && (
-            <div style={{ textAlign: 'center', color: 'var(--primary)' }}>
-              <Wand2 size={48} className="spinner" style={{ animation: 'spin 2s linear infinite', marginBottom: '1rem' }} />
+            <div style={{ textAlign: 'center', color: 'var(--primary)', padding: '2rem' }}>
+              <Wand2 size={48} className="spinner" style={{ animation: 'spin 2s linear infinite', marginBottom: '1rem', display: 'block', margin: '0 auto 1rem' }} />
               <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>{status || 'Extracting subject perfectly...'}</div>
             </div>
           )}
 
-          {processedUrl && !isProcessing && (
+          {isError && (
+            <div style={{ textAlign: 'center', padding: '2rem', maxWidth: '400px' }}>
+              <div style={{ width: '80px', height: '80px', background: 'rgba(239,68,68,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: '#ef4444' }}>
+                <AlertCircle size={32} />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 0.5rem', color: '#ef4444' }}>AI Processing Failed</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+                {status}
+                <br /><br />
+                Make sure you are connected to the internet. If you have an ad-blocker, try disabling it as it might block the AI model download.
+              </p>
+              <button onClick={() => { setIsError(false); setOriginalImage(null); }} style={{ padding: '12px 32px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '100px', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer' }}>
+                Try Another Image
+              </button>
+            </div>
+          )}
+
+          {processedUrl && !isProcessing && !isError && (
             <div 
               ref={previewRef}
               style={{ 
