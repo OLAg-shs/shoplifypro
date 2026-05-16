@@ -4,6 +4,7 @@ import {
   Loader2, CheckCircle, Plus, LayoutGrid, X, AlertCircle
 } from 'lucide-react';
 import { removeBackground } from '@imgly/background-removal';
+import { pipeline, env } from '@xenova/transformers';
 import { api } from '../utils/api';
 
 const ProductStudio = () => {
