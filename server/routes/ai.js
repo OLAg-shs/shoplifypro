@@ -236,7 +236,7 @@ router.post('/v2/process-image', protect, authorize('seller'), async (req, res) 
     const imageFile = req.files.image;
     const imageData = fs.readFileSync(imageFile.tempFilePath);
 
-    let modelId = 'briaai/RMBG-1.4'; // Default to state-of-the-art
+    let modelId = 'nielsr/slid-background-removal'; 
     if (action === 'upscale') {
       modelId = 'stabilityai/stable-diffusion-x4-upscaler';
     }
@@ -252,7 +252,7 @@ router.post('/v2/process-image', protect, authorize('seller'), async (req, res) 
       protocol: 'https:',
       hostname: hfHost,
       port: 443,
-      path: `/${modelId}`,
+      path: `/models/${modelId}`,
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${String(process.env.HUGGINGFACE_API_KEY).trim()}`,
