@@ -246,9 +246,13 @@ router.post('/v2/process-image', protect, authorize('seller'), async (req, res) 
     // ── GRADIO STEALTH TUNNEL ──────────────────────────────────────────
     // We connect to a public SPACE which is 100% free and has no 404 gates
     const { Client } = require('@gradio/client');
-    const hfKey = String(process.env.HUGGINGFACE_API_KEY).trim();
+    const hfKey = String(process.env.HUGGINGFACE_API_KEY || '').trim();
     
-    console.log(`[AI] Connecting to Gradio Space for ${action}...`);
+    if (!hfKey) {
+        console.warn('[AI WARNING] HUGGINGFACE_API_KEY is missing. Tunnel may fail.');
+    }
+
+    console.log(`[AI] Initializing Gradio Connection to Space: fffiloni/RMBG-1.4`);
 
     // We use a high-availability public Space mirror
     const app = await Client.connect("fffiloni/RMBG-1.4", { hf_token: hfKey });
