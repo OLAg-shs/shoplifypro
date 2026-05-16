@@ -243,42 +243,47 @@ router.post('/process-image', protect, authorize('seller'), async (req, res) => 
 
     console.log(`[AI] Processing ${action} using model: ${modelId}...`);
 
-    // ── UNIVERSAL AI CONNECTOR ─────────────────────────────────────────────
-    const hfUrl = `https://api-inference.huggingface.co/models/${modelId}`;
-    console.log(`[AI] Calling Hugging Face: ${hfUrl}`);
-
-    const response = await fetch(
-      hfUrl,
-      {
-        headers: { 
-          "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-          "Content-Type": "application/octet-stream" 
-        },
-        method: "POST",
-        body: imageData,
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[AI API ERROR]', errorText);
-      
-      if (errorText.includes('loading')) {
-        return res.status(503).json({ message: 'AI Engine is warming up. Please try again in 30 seconds.' });
-      }
-      
-      throw new Error(`AI Engine responded with ${response.status}: ${errorText}`);
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    if (!arrayBuffer || arrayBuffer.byteLength < 100) {
-        throw new Error('AI returned an empty or invalid image.');
-    }
+    // ── NATIVE HTTPS CONNECTOR ─────────────────────────────────────────────
+    // Native https request bypasses all local Vercel/Express routing conflicts
+    const https = require('https');
     
-    const buffer = Buffer.from(arrayBuffer);
+    const options = {
+      hostname: 'api-inference.huggingface.co',
+      path: `/models/${modelId}`,
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+        'Content-Type': 'application/octet-stream'
+      }
+    };
 
-    res.set('Content-Type', 'image/png');
-    res.send(buffer);
+    const hfReq = https.request(options, (hfRes) => {
+      const chunks = [];
+      hfRes.on('data', (chunk) => chunks.push(chunk));
+      hfRes.on('end', async () => {
+        const resultBuffer = Buffer.concat(chunks);
+        
+        if (hfRes.statusCode !== 200) {
+          const errorText = resultBuffer.toString();
+          console.error('[AI API ERROR]', errorText);
+          if (errorText.includes('loading')) {
+            return res.status(503).json({ message: 'AI Engine is warming up. Please try again in 30 seconds.' });
+          }
+          return res.status(hfRes.statusCode).json({ message: 'AI processing failed.', error: errorText });
+        }
+
+        res.set('Content-Type', 'image/png');
+        res.send(resultBuffer);
+      });
+    });
+
+    hfReq.on('error', (e) => {
+      console.error('[AI HTTPS ERROR]', e);
+      res.status(500).json({ message: 'AI processing failed.', error: e.message });
+    });
+
+    hfReq.write(imageData);
+    hfReq.end();
   } catch (error) {
     console.error('[AI PROCESS ERROR]', error);
     res.status(500).json({ message: 'AI processing failed.', error: error.message });
