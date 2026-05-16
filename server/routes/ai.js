@@ -244,12 +244,14 @@ router.post('/process-image', protect, authorize('seller'), async (req, res) => 
     console.log(`[AI] Processing ${action} using model: ${modelId}...`);
 
     // ── UNIVERSAL AI CONNECTOR ─────────────────────────────────────────────
-    // Using Base64 to ensure the image data is never corrupted during transfer
+    const hfUrl = `https://api-inference.huggingface.co/models/${modelId}`;
+    console.log(`[AI] Calling Hugging Face: ${hfUrl}`);
+
     const response = await fetch(
-      `https://api-inference.huggingface.co/models/${modelId}`,
+      hfUrl,
       {
         headers: { 
-          Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+          "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
           "Content-Type": "application/octet-stream" 
         },
         method: "POST",
