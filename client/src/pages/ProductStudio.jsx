@@ -19,8 +19,8 @@ import {
   Lock
 } from 'lucide-react';
 import { api } from '../utils/api';
-import demoBeforeImg from '/demo-before-after.png';
-import demoAfterImg from '/demo-perfume.png';
+import demoBeforeImg from '../assets/demo-before.png';
+import demoAfterImg from '../assets/demo-after.png';
 
 // ── Draggable Before/After Slider Component ───────────────────────────────────
 const BeforeAfterSlider = ({ beforeSrc, afterSrc }) => {
