@@ -75,19 +75,36 @@ const DashboardLayout = ({ children }) => {
           </NavLink>
         </div>
 
-        <div style={{ marginTop: 'auto', borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem' }}>
+        <div style={{ marginTop: 'auto', borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem', paddingBottom: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem', paddingLeft: '0.5rem' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'white' }}>
               {user.name?.charAt(0) || 'S'}
             </div>
-            <div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'white' }}>{user.name || 'Seller'}</div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name || 'Seller'}</div>
               <div style={{ fontSize: '0.75rem', color: user.subscription_tier === 'pro' ? '#a78bfa' : 'var(--text-muted)', fontWeight: 600 }}>
                 {user.subscription_tier === 'pro' ? '⚡ Pro Plan' : 'Free Plan'}
               </div>
             </div>
           </div>
-          <button onClick={handleLogout} className="sidebar-link" style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', color: '#ef4444' }}>
+          <button 
+            onClick={handleLogout} 
+            className="sidebar-link logout-btn" 
+            style={{ 
+              width: '100%', 
+              border: 'none', 
+              background: 'rgba(239, 68, 68, 0.05)', 
+              cursor: 'pointer', 
+              color: '#ef4444',
+              padding: '12px',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              fontWeight: 700,
+              transition: 'all 0.2s ease'
+            }}
+          >
             <LogOut size={20} /> Logout
           </button>
         </div>
