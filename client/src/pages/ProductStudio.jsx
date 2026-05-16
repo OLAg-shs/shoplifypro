@@ -39,17 +39,27 @@ const ProductStudio = () => {
     setOriginalImage(URL.createObjectURL(file));
     setProcessedUrl(null);
     setIsProcessing(true);
-    setStatus('Extracting subject...');
+    setStatus('Initializing Neural Engine...');
 
     try {
+      const config = {
+        publicPath: "https://static.imgly.com/@imgly/background-removal-data/1.5.5/dist/",
+        progress: (key, current, total) => {
+          const percent = Math.round((current / total) * 100);
+          setStatus(`Loading AI Model... ${percent}%`);
+        }
+      };
+      
       // Run local neural background removal
-      const blob = await removeBackground(file);
+      const blob = await removeBackground(file, config);
       const url = URL.createObjectURL(blob);
       setProcessedUrl(url);
       setStatus('');
     } catch (err) {
       console.error('BG Removal error:', err);
       setStatus('Background removal failed. Please try a clearer image.');
+      // Fallback: just use the original image
+      setProcessedUrl(URL.createObjectURL(file));
     } finally {
       setIsProcessing(false);
     }

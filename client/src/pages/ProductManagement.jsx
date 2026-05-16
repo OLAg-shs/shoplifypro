@@ -52,8 +52,16 @@ const ProductManagement = () => {
     setUploadStatus('Processing with Neural Engine...');
 
     try {
-      // Local AI removal
-      const blob = await imglyRemoveBackground(newProduct.imageFile);
+      // Local AI removal using remote publicPath to prevent Vite 404 hangs
+      const config = {
+        publicPath: "https://static.imgly.com/@imgly/background-removal-data/1.5.5/dist/",
+        progress: (key, current, total) => {
+          const percent = Math.round((current / total) * 100);
+          setUploadStatus(`Loading AI Model... ${percent}%`);
+        }
+      };
+      
+      const blob = await imglyRemoveBackground(newProduct.imageFile, config);
       const url = URL.createObjectURL(blob);
       
       // For real implementation, we would upload this blob to Supabase storage or Cloudinary
