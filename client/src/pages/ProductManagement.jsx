@@ -52,9 +52,9 @@ const ProductManagement = () => {
     setUploadStatus('Processing with Neural Engine...');
 
     try {
-      // Local AI removal using remote publicPath to prevent Vite 404 hangs
+      // Local AI removal using remote proxy to prevent AdBlockers from blocking CDNs
       const config = {
-        publicPath: "https://unpkg.com/@imgly/background-removal-data@1.4.5/dist/",
+        publicPath: "/api/ai/models/",
         progress: (key, current, total) => {
           const percent = Math.round((current / total) * 100);
           setUploadStatus(`Loading AI Model... ${percent}%`);

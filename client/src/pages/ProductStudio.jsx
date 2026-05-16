@@ -41,7 +41,7 @@ const ProductStudio = () => {
 
     try {
       const config = {
-        publicPath: "https://unpkg.com/@imgly/background-removal-data@1.4.5/dist/",
+        publicPath: "/api/ai/models/",
         progress: (key, current, total) => {
           const percent = Math.round((current / total) * 100);
           setStatus(`Downloading AI Models... ${percent}%`);
