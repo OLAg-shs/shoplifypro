@@ -1,823 +1,344 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
-  Sparkles, 
-  Upload, 
-  Trash2, 
-  Image as ImageIcon, 
-  Wand2, 
-  Maximize, 
-  Download, 
-  ShieldCheck,
-  AlertCircle,
-  Loader2,
-  ChevronRight,
-  Play,
-  CheckCircle,
-  Zap,
-  Star,
-  ArrowRight,
-  Lock
+  Sparkles, Upload, Image as ImageIcon, Wand2, Download, 
+  Loader2, CheckCircle, Plus, LayoutGrid, X
 } from 'lucide-react';
+import { removeBackground } from '@imgly/background-removal';
 import { api } from '../utils/api';
-import demoBeforeImg from '../assets/demo-before.png';
-import demoAfterImg from '../assets/demo-after.png';
 
-// ── Draggable Before/After Slider Component ───────────────────────────────────
-const BeforeAfterSlider = ({ beforeSrc, afterSrc }) => {
-  const [sliderPos, setSliderPos] = useState(50);
-  const containerRef = useRef(null);
-  const isDragging = useRef(false);
-
-  const handleMove = (clientX) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const pos = ((clientX - rect.left) / rect.width) * 100;
-    setSliderPos(Math.min(Math.max(pos, 2), 98));
-  };
-
-  const onMouseDown = (e) => { e.preventDefault(); isDragging.current = true; };
-  const onMouseUp = () => { isDragging.current = false; };
-  const onMouseMove = (e) => { if (isDragging.current) handleMove(e.clientX); };
-  const onTouchMove = (e) => { e.preventDefault(); handleMove(e.touches[0].clientX); };
-  const onTouchStart = () => { isDragging.current = true; };
-  const onTouchEnd = () => { isDragging.current = false; };
-
-  useEffect(() => {
-    window.addEventListener('mouseup', onMouseUp);
-    return () => window.removeEventListener('mouseup', onMouseUp);
-  }, []);
-
-  const imgStyle = {
-    position: 'absolute', top: 0, left: 0,
-    width: '100%', height: '100%', objectFit: 'cover', display: 'block'
-  };
-
-  return (
-    <div
-      ref={containerRef}
-      onMouseMove={onMouseMove}
-      onTouchMove={onTouchMove}
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-      style={{
-        position: 'relative', width: '100%', height: '420px',
-        borderRadius: '24px', overflow: 'hidden', cursor: 'ew-resize',
-        userSelect: 'none', background: '#111',
-        boxShadow: '0 40px 80px -20px rgba(0,0,0,0.6)'
-      }}
-    >
-      {/* AFTER — full background image */}
-      <img src={afterSrc} alt="After AI" style={imgStyle} />
-
-      {/* BEFORE — clipped to left of slider */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0,
-        width: `${sliderPos}%`, height: '100%', overflow: 'hidden'
-      }}>
-        <img src={beforeSrc} alt="Before AI" style={{ ...imgStyle, width: `${(100 / sliderPos) * 100}%` }} />
-      </div>
-
-      {/* Labels */}
-      <div style={{ position: 'absolute', top: '1rem', left: '1rem', background: 'rgba(0,0,0,0.7)', color: 'white', padding: '5px 12px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', backdropFilter: 'blur(8px)', zIndex: 5 }}>
-        📱 BEFORE
-      </div>
-      <div style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'linear-gradient(135deg,#7c3aed,#ec4899)', color: 'white', padding: '5px 12px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', zIndex: 5 }}>
-        ✨ AFTER AI
-      </div>
-
-      {/* Divider */}
-      <div style={{
-        position: 'absolute', top: 0, bottom: 0,
-        left: `${sliderPos}%`, width: '3px',
-        background: 'white', transform: 'translateX(-50%)',
-        boxShadow: '0 0 15px rgba(255,255,255,0.6)', zIndex: 10
-      }}>
-        <div
-          onMouseDown={onMouseDown}
-          style={{
-            position: 'absolute', top: '50%', left: '50%',
-            transform: 'translate(-50%,-50%)',
-            width: '52px', height: '52px', borderRadius: '50%',
-            background: 'white',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'ew-resize', zIndex: 11, fontSize: '1.3rem', color: '#7c3aed', fontWeight: 900
-          }}
-        >
-          ⇔
-        </div>
-      </div>
-    </div>
-  );
-};
-
-
+const STUDIO_BACKGROUNDS = [
+  { id: 'transparent', name: 'Transparent', style: { background: 'url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYNgvwMDA/xVIMzIwMDAzMDKgS2BVA8GAwWgYjIaB2TCAnbFjDIfBiQEAsVwQ/7W6aLgAAAAASUVORK5CYII=)' } },
+  { id: 'pure-white',  name: 'Pure White',  style: { background: '#ffffff' } },
+  { id: 'soft-gray',   name: 'Soft Gray',   style: { background: '#f3f4f6' } },
+  { id: 'warm-sand',   name: 'Warm Sand',   style: { background: '#f5efe6' } },
+  { id: 'dark-slate',  name: 'Dark Slate',  style: { background: '#0f172a' } },
+  { id: 'neon-glow',   name: 'Neon Glow',   style: { background: 'linear-gradient(135deg, #7c3aed, #ec4899)' } },
+];
 
 const ProductStudio = () => {
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [originalImage, setOriginalImage] = useState(null);
+  const [processedUrl, setProcessedUrl] = useState(null); // URL of transparent PNG
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processedImage, setProcessedImage] = useState(null);
-  const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('process'); // 'process' or 'ad-gen'
-  const [adPrompt, setAdPrompt] = useState('');
+  const [status, setStatus] = useState('');
+  const [activeBg, setActiveBg] = useState(STUDIO_BACKGROUNDS[1]); // Default pure white
   
+  // Create Product Modal State
+  const [showModal, setShowModal] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [productData, setProductData] = useState({
+    name: '', price: '', category: '', stock: '10', description: '', tags: ''
+  });
+
   const fileInputRef = useRef(null);
+  const previewRef = useRef(null);
 
-  const handleImageSelect = (e) => {
+  const handleImageSelect = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setSelectedImage(file);
-      setImagePreview(URL.createObjectURL(file));
-      setProcessedImage(null);
-      setError(null);
-    }
-  };
-
-  const processImage = async (action) => {
-    if (!selectedImage) return;
+    if (!file) return;
     
+    setOriginalImage(URL.createObjectURL(file));
+    setProcessedUrl(null);
     setIsProcessing(true);
-    setError(null);
-    
+    setStatus('Extracting subject...');
+
     try {
-      const formData = new FormData();
-      formData.append('image', selectedImage);
-      formData.append('action', action);
-
-      const response = await fetch('/api/ai/process-image', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Processing failed');
-      }
-
-      const blob = await response.blob();
-      setProcessedImage(URL.createObjectURL(blob));
+      // Run local neural background removal
+      const blob = await removeBackground(file);
+      const url = URL.createObjectURL(blob);
+      setProcessedUrl(url);
+      setStatus('');
     } catch (err) {
-      console.error(err);
-      setError(err.message);
+      console.error('BG Removal error:', err);
+      setStatus('Background removal failed. Please try a clearer image.');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const generateAd = async () => {
-    if (!adPrompt.trim()) {
-      setError('Please enter a description for the ad background.');
-      return;
-    }
-
-    setIsProcessing(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/ai/generate-ad', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ prompt: adPrompt })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Generation failed');
-      }
-
-      const blob = await response.blob();
-      setProcessedImage(URL.createObjectURL(blob));
-    } catch (err) {
-      console.error(err);
-      setError(err.message);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const downloadImage = () => {
-    if (!processedImage) return;
-    const link = document.createElement('a');
-    link.href = processedImage;
-    link.download = `ai-product-${Date.now()}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const clearAll = () => {
-    setSelectedImage(null);
-    setImagePreview(null);
-    setProcessedImage(null);
-    setError(null);
-    setAdPrompt('');
-  };
-
-  const handleCheckout = async () => {
-    setIsProcessing(true);
-    try {
-      const response = await fetch('/api/billing/create-checkout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+  // Helper to bake the background and image into a single Blob
+  const createFinalImageBlob = async () => {
+    if (!previewRef.current) return null;
+    
+    // We use html2canvas for ease, or draw directly to canvas
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = processedUrl;
+    
+    return new Promise((resolve) => {
+      img.onload = () => {
+        // High-res output
+        canvas.width = 1080;
+        canvas.height = 1080;
+        
+        // Draw background
+        if (activeBg.id === 'transparent') {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        } else if (activeBg.style.background.includes('linear-gradient')) {
+          const grd = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+          grd.addColorStop(0, "#7c3aed");
+          grd.addColorStop(1, "#ec4899");
+          ctx.fillStyle = grd;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        } else {
+          ctx.fillStyle = activeBg.style.background;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
-      });
-      const data = await response.json();
-      if (data.authorization_url) {
-        window.location.href = data.authorization_url;
-      } else {
-        alert('Payment initialization failed: ' + data.message);
-        setIsProcessing(false);
-      }
+
+        // Draw image perfectly centered, containing within bounds
+        const scale = Math.min(canvas.width / img.width, canvas.height / img.height) * 0.9;
+        const w = img.width * scale;
+        const h = img.height * scale;
+        const x = (canvas.width - w) / 2;
+        const y = (canvas.height - h) / 2;
+        
+        // Add subtle drop shadow if not dark mode or transparent
+        if (activeBg.id !== 'transparent' && activeBg.id !== 'dark-slate' && activeBg.id !== 'neon-glow') {
+          ctx.shadowColor = 'rgba(0,0,0,0.15)';
+          ctx.shadowBlur = 40;
+          ctx.shadowOffsetY = 20;
+        }
+        
+        ctx.drawImage(img, x, y, w, h);
+        canvas.toBlob(blob => resolve(blob), 'image/png', 1.0);
+      };
+    });
+  };
+
+  const handleDownload = async () => {
+    setStatus('Generating HD file...');
+    const blob = await createFinalImageBlob();
+    if (!blob) return;
+    
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `product-studio-${Date.now()}.png`;
+    link.click();
+    setStatus('');
+  };
+
+  const handlePublishToStore = async (e) => {
+    e.preventDefault();
+    setIsPublishing(true);
+    setStatus('Uploading high-res image...');
+    
+    try {
+      const blob = await createFinalImageBlob();
+      
+      // Upload image first
+      const formData = new FormData();
+      formData.append('image', blob, 'studio-product.png');
+      const uploadData = await api.upload('/upload/image', formData);
+      
+      // Create product
+      setStatus('Publishing product...');
+      const newProductData = {
+        name: productData.name,
+        price: parseFloat(productData.price),
+        category: productData.category,
+        stock: parseInt(productData.stock),
+        description: productData.description,
+        images: [uploadData.url],
+        is_active: true
+      };
+      
+      await api.post('/products', newProductData);
+      
+      setStatus('✅ Product successfully published!');
+      setTimeout(() => {
+        setShowModal(false);
+        setStatus('');
+      }, 2000);
+      
     } catch (err) {
       console.error(err);
-      alert('Network error connecting to payment gateway.');
-      setIsProcessing(false);
+      setStatus('❌ Failed to publish product.');
+    } finally {
+      setIsPublishing(false);
     }
   };
 
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const isPro = user.subscription_tier === 'pro';
-
-  // ── PAYWALL UI ─────────────────────────────────────────────────────────────
-  if (!isPro) {
-    const steps = [
-      { num: '01', icon: <Upload size={28} />, title: 'Upload Your Product', desc: 'Take any photo with your phone. Messy background, bad lighting—it doesn\'t matter. Upload it raw.' },
-      { num: '02', icon: <Wand2 size={28} />, title: 'Choose Your AI Action', desc: 'Remove the background instantly, or describe any scene and the AI generates a professional studio backdrop for you.' },
-      { num: '03', icon: <Download size={28} />, title: 'Download & Sell', desc: 'Export your studio-quality image in seconds and upload it to your store. Watch your conversion rate climb.' },
-    ];
-
-    return (
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem 1rem' }}>
-
-        {/* ── HERO ── */}
-        <div style={{ textAlign: 'center', padding: '4rem 1rem 3rem' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, rgba(124,58,237,0.15), rgba(236,72,153,0.15))', border: '1px solid rgba(124,58,237,0.3)', color: '#a78bfa', padding: '8px 18px', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.06em', marginBottom: '2rem' }}>
-            <Sparkles size={14} /> EAGLE CHOICE PRO — AI STUDIO
-          </div>
-          <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 900, lineHeight: 1.05, margin: '0 0 1.5rem', background: 'linear-gradient(135deg, #fff 30%, #a5b4fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            Turn Any Phone Photo Into<br/>a $5,000 Studio Shot
-          </h1>
-          <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', maxWidth: '560px', margin: '0 auto 2.5rem', lineHeight: 1.7 }}>
-            Your competitors are paying agencies thousands. You won't have to. The Eagle Choice AI Studio does it in seconds.
-          </p>
-          <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
-            {['Background Removal', 'AI Scene Generator', 'Smart Upscaling', 'Video Ads (Soon)'].map(f => (
-              <span key={f} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#a78bfa', fontSize: '0.9rem', fontWeight: 600 }}>
-                <CheckCircle size={16} style={{ color: '#34d399' }} /> {f}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* ── BEFORE / AFTER SLIDER ── */}
-        <div style={{ marginBottom: '1rem' }}>
-          <p style={{ textAlign: 'center', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-            👇 Drag the slider to see the transformation
-          </p>
-          <BeforeAfterSlider
-            beforeSrc={demoBeforeImg}
-            afterSrc={demoAfterImg}
-          />
-        </div>
-
-        {/* ── HOW IT WORKS ── */}
-        <div style={{ margin: '5rem 0' }}>
-          <h2 style={{ textAlign: 'center', fontSize: '2rem', fontWeight: 800, color: 'white', marginBottom: '0.75rem' }}>How It Works</h2>
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '3rem' }}>Three steps. Less than 60 seconds. Professional results every time.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
-            {steps.map((s, i) => (
-              <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '2.5rem', transition: 'all 0.3s ease', position: 'relative', overflow: 'hidden' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.08)'; e.currentTarget.style.borderColor = 'rgba(124,58,237,0.3)'; e.currentTarget.style.transform = 'translateY(-6px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-              >
-                <div style={{ fontSize: '5rem', fontWeight: 900, color: 'rgba(124,58,237,0.08)', position: 'absolute', top: '-0.5rem', right: '1.5rem', lineHeight: 1, fontFamily: 'monospace' }}>{s.num}</div>
-                <div style={{ width: '56px', height: '56px', background: 'linear-gradient(135deg, rgba(124,58,237,0.2), rgba(236,72,153,0.2))', border: '1px solid rgba(124,58,237,0.3)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a78bfa', marginBottom: '1.5rem' }}>
-                  {s.icon}
-                </div>
-                <h3 style={{ color: 'white', fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.75rem' }}>{s.title}</h3>
-                <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>{s.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── PRICING / CTA ── */}
-        <div style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(236,72,153,0.08))', border: '1px solid rgba(124,58,237,0.25)', borderRadius: '32px', padding: '3.5rem', textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(52,211,153,0.15)', color: '#34d399', padding: '6px 14px', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 700, marginBottom: '1.5rem' }}>
-            <Zap size={14} /> LIMITED OFFER — Only $10/month
-          </div>
-          <h2 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'white', marginBottom: '1rem', lineHeight: 1.1 }}>
-            Get Unlimited AI Generations<br/>for Less Than a Coffee a Week
-          </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', marginBottom: '2.5rem', maxWidth: '500px', margin: '0 auto 2.5rem' }}>
-            100 AI credits every 30 days. Background removal, scene generation, upscaling, and early access to video ad creation.
-          </p>
-
-          <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2.5rem' }}>
-            {[
-              { label: '100', sub: 'AI Credits/Month' },
-              { label: '30s', sub: 'Average Processing Time' },
-              { label: '∞', sub: 'Store Backgrounds' },
-            ].map(s => (
-              <div key={s.label} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '2.5rem', fontWeight: 900, background: 'linear-gradient(135deg,#a78bfa,#ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{s.label}</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>{s.sub}</div>
-              </div>
-            ))}
-          </div>
-
-          <button
-            onClick={handleCheckout}
-            disabled={isProcessing}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', padding: '1.2rem 3rem', background: 'linear-gradient(135deg, #7c3aed, #ec4899)', color: 'white', border: 'none', borderRadius: '16px', fontSize: '1.2rem', fontWeight: 700, cursor: isProcessing ? 'not-allowed' : 'pointer', transition: 'all 0.3s ease', boxShadow: '0 10px 40px -10px rgba(236,72,153,0.6)', opacity: isProcessing ? 0.7 : 1 }}
-            onMouseEnter={e => { if (!isProcessing) { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 20px 50px -10px rgba(236,72,153,0.8)'; } }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 40px -10px rgba(236,72,153,0.6)'; }}
-          >
-            {isProcessing ? <Loader2 size={24} style={{ animation: 'spin 1s linear infinite' }} /> : <Zap size={24} />}
-            {isProcessing ? 'Connecting to Secure Checkout...' : 'Unlock AI Studio — $10/Month'}
-          </button>
-
-          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            {['🔒 Secured by Paystack', '✓ Cancel Anytime', '✓ Instant Access After Payment'].map(t => (
-              <span key={t} style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{t}</span>
-            ))}
-          </div>
-        </div>
-
-        <style>{`
-          @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        `}</style>
-      </div>
-    );
-  }
-
-  // ── STUDIO UI (FOR PRO USERS) ──────────────────────────────────────────────
   return (
-    <div className="studio-container">
-      <div className="studio-header">
-        <div className="studio-badge">
-          <Sparkles size={14} /> AI POWERED
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
+        <div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e', padding: '6px 14px', borderRadius: '100px', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.06em', marginBottom: '1rem' }}>
+            <Sparkles size={13} /> FREE AI TOOL
+          </div>
+          <h1 style={{ margin: '0 0 0.5rem', fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-0.02em' }}>AI Product Editor</h1>
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '1.1rem' }}>
+            Instantly remove backgrounds, apply studio lighting, and publish directly to your store.
+          </p>
         </div>
-        <h1>Product AI Studio</h1>
-        <p>Transform your product photography into professional-grade assets in seconds. Tokens left: <strong>{user.ai_credits}</strong></p>
-      </div>
-
-      <div className="studio-tabs">
-        <button 
-          className={`tab-btn ${activeTab === 'process' ? 'active' : ''}`}
-          onClick={() => setActiveTab('process')}
-        >
-          <Wand2 size={18} /> Image Enhancement
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'ad-gen' ? 'active' : ''}`}
-          onClick={() => setActiveTab('ad-gen')}
-        >
-          <ImageIcon size={18} /> Ad Background Generator
-        </button>
-      </div>
-
-      <div className="studio-content glass-card">
-        {activeTab === 'process' ? (
-          <div className="studio-grid">
-            {/* Left side: Upload/Preview */}
-            <div className="studio-upload-section">
-              <div className="section-title">Step 1: Upload Product</div>
-              {!imagePreview ? (
-                <div 
-                  className="upload-dropzone"
-                  onClick={() => fileInputRef.current.click()}
-                >
-                  <Upload size={48} className="upload-icon" />
-                  <p>Click or drag to upload product image</p>
-                  <span>Supports PNG, JPG, WEBP (Max 10MB)</span>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    hidden 
-                    onChange={handleImageSelect}
-                    accept="image/*"
-                  />
-                </div>
-              ) : (
-                <div className="image-preview-container">
-                  <img src={imagePreview} alt="Original" className="preview-img" />
-                  <button className="clear-btn" onClick={clearAll}>
-                    <Trash2 size={16} /> Change Image
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Middle: Actions */}
-            <div className="studio-actions-section">
-              <div className="section-title">Step 2: Choose Action</div>
-              <div className="action-buttons">
-                <button 
-                  className="action-btn" 
-                  disabled={!selectedImage || isProcessing}
-                  onClick={() => processImage('remove-bg')}
-                >
-                  <div className="action-icon"><Wand2 size={24} /></div>
-                  <div className="action-text">
-                    <strong>Remove Background</strong>
-                    <span>Makes background transparent</span>
-                  </div>
-                  <ChevronRight size={18} />
-                </button>
-                <button 
-                  className="action-btn"
-                  disabled={!selectedImage || isProcessing}
-                  onClick={() => processImage('upscale')}
-                >
-                  <div className="action-icon"><Maximize size={24} /></div>
-                  <div className="action-text">
-                    <strong>Smart Upscale</strong>
-                    <span>Increase resolution & quality</span>
-                  </div>
-                  <ChevronRight size={18} />
-                </button>
-              </div>
-
-              {error && (
-                <div className="error-box">
-                  <AlertCircle size={18} /> {error}
-                </div>
-              )}
-            </div>
-
-            {/* Right side: Result */}
-            <div className="studio-result-section">
-              <div className="section-title">Step 3: Export Result</div>
-              <div className="result-display glass-card">
-                {isProcessing ? (
-                  <div className="processing-state">
-                    <Loader2 size={40} className="spinner" />
-                    <p>AI is working its magic...</p>
-                    <span>This usually takes 5-10 seconds</span>
-                  </div>
-                ) : processedImage ? (
-                  <div className="result-preview">
-                    <img src={processedImage} alt="Processed" className="result-img" />
-                    <button className="btn btn-primary download-btn" onClick={downloadImage}>
-                      <Download size={18} /> Download Asset
-                    </button>
-                  </div>
-                ) : (
-                  <div className="empty-state">
-                    <ShieldCheck size={40} style={{ opacity: 0.2 }} />
-                    <p>Processed image will appear here</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="ad-gen-container">
-             <div className="ad-gen-grid">
-                <div className="ad-gen-input">
-                   <div className="section-title">Describe your Ad Setting</div>
-                   <textarea 
-                    placeholder="e.g. A luxurious wooden table in a sunlit modern living room with soft bokeh background..."
-                    value={adPrompt}
-                    onChange={(e) => setAdPrompt(e.target.value)}
-                    rows={5}
-                    className="studio-textarea"
-                   />
-                   <button 
-                    className="btn btn-primary" 
-                    style={{ width: '100%', marginTop: '1rem', height: '54px' }}
-                    onClick={generateAd}
-                    disabled={isProcessing}
-                   >
-                     {isProcessing ? <Loader2 className="spinner" /> : <Sparkles size={18} />}
-                     {isProcessing ? 'Generating Background...' : 'Generate Ad Background'}
-                   </button>
-                   <p className="hint-text">
-                     <AlertCircle size={14} /> You can use the generated background to place your product on it using our Store Builder.
-                   </p>
-                </div>
-                <div className="ad-gen-result">
-                  <div className="result-display glass-card" style={{ height: '100%', minHeight: '300px' }}>
-                    {isProcessing ? (
-                      <div className="processing-state">
-                        <Loader2 size={40} className="spinner" />
-                        <p>Painting your unique ad...</p>
-                      </div>
-                    ) : processedImage ? (
-                      <div className="result-preview">
-                        <img src={processedImage} alt="Generated Ad" className="result-img" />
-                        <button className="btn btn-primary download-btn" onClick={downloadImage}>
-                          <Download size={18} /> Download Background
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="empty-state">
-                        <ImageIcon size={40} style={{ opacity: 0.2 }} />
-                        <p>Generated ad background will appear here</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-             </div>
-          </div>
+        
+        {processedUrl && (
+          <button onClick={() => setShowModal(true)} style={{ padding: '12px 24px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 10px 25px -5px rgba(99,102,241,0.4)' }}>
+            <Plus size={20} /> Create Product
+          </button>
         )}
       </div>
 
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '2rem', minHeight: '600px' }}>
+        
+        {/* Main Canvas Area */}
+        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
+          
+          {!originalImage && !isProcessing && (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ width: '80px', height: '80px', background: 'rgba(99,102,241,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: 'var(--primary)' }}>
+                <Upload size={32} />
+              </div>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0 0 1rem' }}>Upload Product Photo</h3>
+              <button onClick={() => fileInputRef.current.click()} style={{ padding: '12px 32px', background: 'white', color: '#111', border: 'none', borderRadius: '100px', fontWeight: 800, fontSize: '1rem', cursor: 'pointer' }}>
+                Select Image
+              </button>
+              <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handleImageSelect} />
+            </div>
+          )}
+
+          {isProcessing && (
+            <div style={{ textAlign: 'center', color: 'var(--primary)' }}>
+              <Wand2 size={48} className="spinner" style={{ animation: 'spin 2s linear infinite', marginBottom: '1rem' }} />
+              <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>{status || 'Extracting subject perfectly...'}</div>
+            </div>
+          )}
+
+          {processedUrl && !isProcessing && (
+            <div 
+              ref={previewRef}
+              style={{ 
+                width: '100%', height: '100%', 
+                ...activeBg.style,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'background 0.3s ease'
+              }}
+            >
+              <img 
+                src={processedUrl} 
+                alt="Processed" 
+                style={{ 
+                  maxWidth: '90%', maxHeight: '90%', objectFit: 'contain',
+                  filter: activeBg.id !== 'transparent' && activeBg.id !== 'dark-slate' && activeBg.id !== 'neon-glow' 
+                    ? 'drop-shadow(0 20px 40px rgba(0,0,0,0.15))' : 'none',
+                  transition: 'filter 0.3s ease'
+                }} 
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar Controls */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '1.5rem' }}>
+            <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Studio Background</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              {STUDIO_BACKGROUNDS.map(bg => (
+                <button
+                  key={bg.id}
+                  onClick={() => setActiveBg(bg)}
+                  disabled={!processedUrl}
+                  style={{
+                    padding: '12px 8px', borderRadius: '12px', border: activeBg.id === bg.id ? '2px solid var(--primary)' : '2px solid transparent',
+                    background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '0.8rem', fontWeight: 600, cursor: processedUrl ? 'pointer' : 'not-allowed',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', opacity: processedUrl ? 1 : 0.5, transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{ width: '100%', height: '40px', borderRadius: '6px', ...bg.style, border: '1px solid rgba(255,255,255,0.1)' }} />
+                  {bg.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '1.5rem' }}>
+            <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button 
+                onClick={() => { setOriginalImage(null); setProcessedUrl(null); }}
+                style={{ padding: '14px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Upload New Image
+              </button>
+              <button 
+                onClick={handleDownload}
+                disabled={!processedUrl}
+                style={{ padding: '14px', borderRadius: '12px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontWeight: 600, cursor: processedUrl ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: processedUrl ? 1 : 0.5 }}
+              >
+                <Download size={18} /> Download HD
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── CREATE PRODUCT MODAL ── */}
+      {showModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="animate-up" style={{ width: '600px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 40px 100px -20px rgba(0,0,0,0.8)' }}>
+            
+            <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.4rem' }}>
+                <LayoutGrid size={24} color="var(--primary)" /> Publish to Store
+              </h2>
+              <button onClick={() => setShowModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={24} /></button>
+            </div>
+
+            <form onSubmit={handlePublishToStore} style={{ padding: '32px' }}>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '8px' }}>PRODUCT NAME</label>
+                  <input type="text" required value={productData.name} onChange={e => setProductData(p => ({...p, name: e.target.value}))}
+                    style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'white' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '8px' }}>PRICE ($)</label>
+                  <input type="number" step="0.01" required value={productData.price} onChange={e => setProductData(p => ({...p, price: e.target.value}))}
+                    style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'white' }} />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '8px' }}>CATEGORY</label>
+                  <select required value={productData.category} onChange={e => setProductData(p => ({...p, category: e.target.value}))}
+                    style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'white' }}>
+                    <option value="">Select Category</option>
+                    <option>Apparel</option><option>Electronics</option><option>Accessories</option><option>Home</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '8px' }}>TAGS (comma separated)</label>
+                  <input type="text" value={productData.tags} onChange={e => setProductData(p => ({...p, tags: e.target.value}))}
+                    style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'white' }} />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '2rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '8px' }}>DESCRIPTION</label>
+                <textarea rows={3} required value={productData.description} onChange={e => setProductData(p => ({...p, description: e.target.value}))}
+                  style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'white', resize: 'none', fontFamily: 'inherit' }} />
+              </div>
+
+              {status && <div style={{ marginBottom: '1.5rem', textAlign: 'center', fontSize: '0.9rem', color: status.includes('❌') ? '#ef4444' : '#34d399', fontWeight: 600 }}>{status}</div>}
+
+              <button type="submit" disabled={isPublishing} style={{ width: '100%', padding: '16px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                {isPublishing ? <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCircle size={20} />}
+                {isPublishing ? 'Publishing...' : 'Upload & Publish to Store'}
+              </button>
+
+            </form>
+          </div>
+        </div>
+      )}
+
       <style>{`
-        .studio-container {
-          padding: 1rem;
-          max-width: 1400px;
-          margin: 0 auto;
-        }
-        .studio-header {
-          margin-bottom: 2.5rem;
-          text-align: center;
-        }
-        .studio-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          background: rgba(124, 58, 237, 0.1);
-          color: #7c3aed;
-          padding: 6px 12px;
-          border-radius: 100px;
-          font-size: 0.75rem;
-          font-weight: 800;
-          letter-spacing: 0.05em;
-          margin-bottom: 1rem;
-        }
-        .studio-header h1 {
-          font-size: 2.5rem;
-          font-weight: 800;
-          letter-spacing: -0.03em;
-          margin-bottom: 0.5rem;
-          background: linear-gradient(135deg, var(--primary), #ec4899);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-        .studio-header p {
-          color: var(--text-muted);
-          font-size: 1.1rem;
-        }
-        .studio-tabs {
-          display: flex;
-          gap: 1rem;
-          margin-bottom: 1.5rem;
-          justify-content: center;
-        }
-        .tab-btn {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 1rem 2rem;
-          border-radius: 16px;
-          border: 1px solid var(--border-medium);
-          background: rgba(255, 255, 255, 0.5);
-          cursor: pointer;
-          font-weight: 600;
-          color: var(--text-muted);
-          transition: all 0.3s ease;
-        }
-        .tab-btn.active {
-          background: white;
-          color: var(--primary);
-          border-color: var(--primary);
-          box-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.1);
-        }
-        .studio-content {
-          padding: 2.5rem;
-          border-radius: 30px;
-          min-height: 600px;
-        }
-        .studio-grid {
-          display: grid;
-          grid-template-columns: 1fr 1.2fr 1fr;
-          gap: 2.5rem;
-        }
-        .section-title {
-          font-size: 0.85rem;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          color: var(--text-muted);
-          margin-bottom: 1.5rem;
-        }
-        .upload-dropzone {
-          height: 350px;
-          border: 2px dashed var(--border-medium);
-          border-radius: 24px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          padding: 2rem;
-          background: rgba(248, 250, 252, 0.5);
-        }
-        .upload-dropzone:hover {
-          border-color: var(--primary);
-          background: rgba(124, 58, 237, 0.05);
-          transform: translateY(-4px);
-        }
-        .upload-icon {
-          color: var(--primary);
-          margin-bottom: 1.5rem;
-          opacity: 0.6;
-        }
-        .upload-dropzone p {
-          font-weight: 700;
-          margin-bottom: 0.5rem;
-        }
-        .upload-dropzone span {
-          font-size: 0.8rem;
-          color: var(--text-muted);
-        }
-        .image-preview-container {
-          position: relative;
-          height: 350px;
-          border-radius: 24px;
-          overflow: hidden;
-          background: #f1f5f9;
-        }
-        .preview-img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
-        .clear-btn {
-          position: absolute;
-          bottom: 1rem;
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(0, 0, 0, 0.75);
-          color: white;
-          border: none;
-          padding: 8px 16px;
-          border-radius: 100px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 0.8rem;
-          font-weight: 600;
-          cursor: pointer;
-          backdrop-filter: blur(4px);
-        }
-        .action-buttons {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-        .action-btn {
-          display: flex;
-          align-items: center;
-          gap: 1.5rem;
-          padding: 1.5rem;
-          background: white;
-          border: 1px solid var(--border-medium);
-          border-radius: 20px;
-          text-align: left;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          width: 100%;
-        }
-        .action-btn:hover:not(:disabled) {
-          border-color: var(--primary);
-          transform: translateX(8px);
-          box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
-        }
-        .action-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        .action-icon {
-          width: 48px;
-          height: 48px;
-          background: var(--surface-light);
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--primary);
-        }
-        .action-text {
-          flex: 1;
-        }
-        .action-text strong {
-          display: block;
-          font-size: 1.1rem;
-          margin-bottom: 0.25rem;
-        }
-        .action-text span {
-          font-size: 0.85rem;
-          color: var(--text-muted);
-        }
-        .result-display {
-          height: 350px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
-          background-image: linear-gradient(45deg, #f1f5f9 25%, transparent 25%), 
-                            linear-gradient(-45deg, #f1f5f9 25%, transparent 25%), 
-                            linear-gradient(45deg, transparent 75%, #f1f5f9 75%), 
-                            linear-gradient(-45deg, transparent 75%, #f1f5f9 75%);
-          background-size: 20px 20px;
-          background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-        }
-        .processing-state {
-          text-align: center;
-        }
-        .processing-state p {
-          font-weight: 700;
-          margin: 1rem 0 0.25rem;
-        }
-        .processing-state span {
-          font-size: 0.8rem;
-          color: var(--text-muted);
-        }
-        .result-preview {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-        .result-img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
-        .download-btn {
-          position: absolute;
-          bottom: 1.5rem;
-          width: 80%;
-          border-radius: 100px;
-          height: 48px;
-        }
-        .empty-state {
-          text-align: center;
-          color: var(--text-muted);
-        }
-        .ad-gen-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 3rem;
-        }
-        .studio-textarea {
-          width: 100%;
-          background: rgba(255, 255, 255, 0.8);
-          border: 1px solid var(--border-medium);
-          border-radius: 20px;
-          padding: 1.25rem;
-          font-size: 1rem;
-          font-family: inherit;
-          resize: none;
-          transition: all 0.3s ease;
-        }
-        .studio-textarea:focus {
-          border-color: var(--primary);
-          outline: none;
-          box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
-        }
-        .hint-text {
-          display: flex;
-          gap: 8px;
-          align-items: flex-start;
-          font-size: 0.8rem;
-          color: var(--text-muted);
-          margin-top: 1.5rem;
-          line-height: 1.4;
-        }
-        .spinner {
-          animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .error-box {
-          margin-top: 1.5rem;
-          background: rgba(239, 68, 68, 0.1);
-          color: #ef4444;
-          padding: 1rem;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-size: 0.9rem;
-          font-weight: 600;
-        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );

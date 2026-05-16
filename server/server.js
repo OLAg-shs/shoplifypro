@@ -53,6 +53,38 @@ app.get('/', (req, res) => {
   });
 });
 
+// ── Open Graph Share Route ───────────────────────────────────────────────────
+app.get('/share', (req, res) => {
+  const { title, img, desc, redirect } = req.query;
+  const redirectUrl = redirect || process.env.CLIENT_ORIGIN || 'https://eagleschoiceofficial.vercel.app';
+  
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>${title || 'Eagle Choice'}</title>
+        <meta property="og:title" content="${title || 'Shop at Eagle Choice'}">
+        <meta property="og:description" content="${desc || 'Discover amazing products.'}">
+        <meta property="og:image" content="${img || 'https://eagleschoiceofficial.vercel.app/logo.png'}">
+        <meta property="og:image:width" content="1080">
+        <meta property="og:image:height" content="1080">
+        <meta property="og:type" content="website">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="${title || 'Shop at Eagle Choice'}">
+        <meta name="twitter:description" content="${desc || 'Discover amazing products.'}">
+        <meta name="twitter:image" content="${img || 'https://eagleschoiceofficial.vercel.app/logo.png'}">
+      </head>
+      <body>
+        <p>Redirecting to store...</p>
+        <script>
+          window.location.href = "${redirectUrl}";
+        </script>
+      </body>
+    </html>
+  `);
+});
+
 // ── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth',     require('./routes/auth'));
 app.use('/api/stores',   require('./routes/stores'));
