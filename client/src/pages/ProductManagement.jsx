@@ -54,7 +54,7 @@ const ProductManagement = () => {
     try {
       // Local AI removal using remote proxy to prevent AdBlockers from blocking CDNs
       const config = {
-        publicPath: "/api/ai/models/",
+        publicPath: `${window.location.origin}/api/ai/models/`,
         progress: (key, current, total) => {
           const percent = Math.round((current / total) * 100);
           setUploadStatus(`Loading AI Model... ${percent}%`);
