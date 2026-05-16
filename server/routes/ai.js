@@ -243,21 +243,25 @@ router.post('/v2/process-image', protect, authorize('seller'), async (req, res) 
 
     console.log(`[AI] Processing ${action} using model: ${modelId}...`);
 
-    // ── NATIVE HTTPS CONNECTOR ─────────────────────────────────────────────
-    // Native https request bypasses all local Vercel/Express routing conflicts
+    // ── STEALTH NATIVE CONNECTOR ───────────────────────────────────────────
+    // We build the hostname dynamically to bypass Vercel's "Smart" routing traps
     const https = require('https');
+    const hfHost = ['api-inference', 'huggingface', 'co'].join('.');
     
     const options = {
       protocol: 'https:',
-      hostname: 'api-inference.huggingface.co',
+      hostname: hfHost,
       port: 443,
       path: `/models/${modelId}`,
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${String(process.env.HUGGINGFACE_API_KEY).trim()}`,
-        'Content-Type': 'application/octet-stream'
+        'Content-Type': 'application/octet-stream',
+        'Host': hfHost // Explicitly set Host header to prevent local misrouting
       }
     };
+
+    console.log(`[AI] Stealth Tunneling to: ${hfHost}${options.path}`);
 
     const hfReq = https.request(options, (hfRes) => {
       const chunks = [];
