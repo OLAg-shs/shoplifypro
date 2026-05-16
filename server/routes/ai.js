@@ -252,12 +252,12 @@ router.post('/v2/process-image', protect, authorize('seller'), async (req, res) 
       protocol: 'https:',
       hostname: hfHost,
       port: 443,
-      path: `/models/${modelId}`,
+      path: `/${modelId}`,
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${String(process.env.HUGGINGFACE_API_KEY).trim()}`,
         'Content-Type': 'application/octet-stream',
-        'Host': hfHost // Explicitly set Host header to prevent local misrouting
+        'Host': hfHost 
       }
     };
 
