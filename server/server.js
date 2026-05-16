@@ -85,39 +85,18 @@ app.get('/share', (req, res) => {
   `);
 });
 
-// ── AI Model Proxy (Bypass AdBlockers) ───────────────────────────────────────
-const https = require('https');
-app.get('/api/ai/models/*', (req, res) => {
-  const filePath = req.params[0];
-  const targetUrl = `https://static.imgly.com/@imgly/background-removal-data/1.4.3/dist/${filePath}`;
-  
-  https.get(targetUrl, (proxyRes) => {
-    // Copy headers from the target server
-    res.writeHead(proxyRes.statusCode, {
-      'Content-Type': proxyRes.headers['content-type'],
-      'Content-Length': proxyRes.headers['content-length'],
-      'Cache-Control': 'public, max-age=31536000',
-      'Access-Control-Allow-Origin': '*'
-    });
-    proxyRes.pipe(res);
-  }).on('error', (err) => {
-    console.error('Proxy error:', err);
-    res.status(500).send('Proxy error');
-  });
-});
-
 // ── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth',     require('./routes/auth'));
 app.use('/api/stores',   require('./routes/stores'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders',   require('./routes/orders'));
 app.use('/api/agents',   require('./routes/agents'));
-app.use('/api/ai',       require('./routes/ai'));
 app.use('/api/upload',   require('./routes/upload'));
 app.use('/api/analytics',require('./routes/analytics'));
 app.use('/api/admin',    require('./routes/admin'));
 app.use('/api/billing',  require('./routes/billing'));
-app.use('/api/ai',       require('./routes/assistant').router);
+app.use('/api/ai',       require('./routes/ai')); // This now handles both assistant and processing
+
 
 
 // ── 404 Handler ──────────────────────────────────────────────────────────────
