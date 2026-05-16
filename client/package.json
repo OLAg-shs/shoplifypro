@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/copy-models.js && vite build",
     "preview": "vite preview",
     "postinstall": "node scripts/copy-models.js"
   },

@@ -49,32 +49,40 @@ const ProductManagement = () => {
   const handleUploadImage = async () => {
     if (!newProduct.imageFile) return;
     setUploading(true);
-    setUploadStatus('Processing with Neural Engine...');
+    setUploadStatus('Sending to AI Neural Engine...');
 
     try {
-      // Local AI removal using fully local models folder
-      const config = {
-        publicPath: `${window.location.origin}/models/`,
-        progress: (key, current, total) => {
-          const percent = Math.round((current / total) * 100);
-          setUploadStatus(`Loading AI Model... ${percent}%`);
-        }
-      };
+      // ── SERVER-SIDE AI ─────────────────────────────────────────────────────
+      // We use the new backend route which is 100% reliable and free
+      const formData = new FormData();
+      formData.append('image', newProduct.imageFile);
+      formData.append('action', 'remove-bg');
       
-      const blob = await imglyRemoveBackground(newProduct.imageFile, config);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/ai/process-image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || 'AI processing failed');
+      }
+
+      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       
-      // For real implementation, we would upload this blob to Supabase storage or Cloudinary
-      // Here we simulate the upload and get a URL
-      const formData = new FormData();
-      formData.append('image', blob, 'processed.png');
-      
-      const uploadData = await api.upload('/upload/image', formData);
+      // Upload the processed image to the server for storage
+      const uploadFormData = new FormData();
+      uploadFormData.append('image', blob, 'processed.png');
+      const uploadData = await api.upload('/upload/image', uploadFormData);
       
       setNewProduct(p => ({ ...p, imageUrl: uploadData.url, imagePreview: uploadData.url, imageFile: null }));
       setUploadStatus('✅ Studio-quality background removed!');
-    } catch (localError) {
-      console.warn('Local AI removal failed, falling back to basic upload...', localError);
+    } catch (err) {
+      console.warn('AI removal failed, falling back to basic upload...', err);
       try {
         const formData = new FormData();
         formData.append('image', newProduct.imageFile);

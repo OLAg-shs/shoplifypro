@@ -37,26 +37,36 @@ const ProductStudio = () => {
     setProcessedUrl(null);
     setIsProcessing(true);
     setIsError(false);
-    setStatus('Initializing Neural Engine...');
+    setStatus('Sending to AI Neural Engine...');
 
     try {
-      const config = {
-        publicPath: `${window.location.origin}/models/`,
-        progress: (key, current, total) => {
-          const percent = Math.round((current / total) * 100);
-          setStatus(`Downloading AI Models... ${percent}%`);
-        }
-      };
+      // ── SERVER-SIDE AI ─────────────────────────────────────────────────────
+      // We use the new backend route which is 100% reliable and free
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('action', 'remove-bg');
       
-      setStatus('Extracting subject... this may take a moment.');
-      const blob = await removeBackground(file, config);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/ai/process-image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || 'AI processing failed');
+      }
+
+      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       setProcessedUrl(url);
       setStatus('');
     } catch (err) {
-      console.error('BG Removal error:', err);
+      console.error('AI error:', err);
       setIsError(true);
-      setStatus(err.message || 'Background removal failed to load AI models.');
+      setStatus(err.message || 'Background removal failed. Please check your internet.');
     } finally {
       setIsProcessing(false);
     }

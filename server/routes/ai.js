@@ -225,7 +225,8 @@ router.get('/trending', protect, async (req, res) => {
 // @desc    Process image (Background Removal or Upscaling)
 // @route   POST /api/ai/process-image
 // @access  Private (Seller only)
-router.post('/process-image', protect, authorize('seller'), requireCredits, async (req, res) => {
+// Note: This is now FREE for all sellers as requested
+router.post('/process-image', protect, authorize('seller'), async (req, res) => {
   try {
     if (!req.files || !req.files.image) {
       return res.status(400).json({ message: 'No image uploaded.' });
@@ -233,14 +234,17 @@ router.post('/process-image', protect, authorize('seller'), requireCredits, asyn
 
     const { action } = req.body; // 'remove-bg' or 'upscale'
     const imageFile = req.files.image;
+    
+    // Read the file buffer
     const imageData = fs.readFileSync(imageFile.tempFilePath);
 
     let result;
     if (action === 'remove-bg') {
-      console.log('[AI] Removing background...');
-      result = await hf.imageToImage({
+      console.log('[AI] Removing background using RMBG-1.4...');
+      // Hugging Face RMBG-1.4 is state-of-the-art for background removal
+      result = await hf.imageSegmentation({
         model: 'briaai/RMBG-1.4',
-        inputs: new Blob([imageData]),
+        data: imageData,
       });
     } else if (action === 'upscale') {
       console.log('[AI] Upscaling image...');
@@ -252,12 +256,10 @@ router.post('/process-image', protect, authorize('seller'), requireCredits, asyn
       return res.status(400).json({ message: 'Invalid action. Use "remove-bg" or "upscale".' });
     }
 
-    // Convert Blob back to Buffer for response
+    // Convert result to Buffer for response
+    // hf.imageSegmentation returns a Blob for the image
     const arrayBuffer = await result.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-
-    // DEDUCT 1 CREDIT ON SUCCESS
-    await supabase.from('users').update({ ai_credits: req.ai_credits - 1 }).eq('id', req.user.id);
 
     res.set('Content-Type', 'image/png');
     res.send(buffer);
