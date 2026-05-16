@@ -6,13 +6,13 @@ import {
   ShoppingBag,
   TrendingUp,
   Settings,
-  Sparkles,
-  CreditCard,
   LogOut,
   Store,
+  Wand2,
+  Video,
+  Layers,
 } from 'lucide-react';
 import AIAssistant from './AIAssistant';
-
 
 const DashboardLayout = ({ children }) => {
   const navigate = useNavigate();
@@ -55,13 +55,18 @@ const DashboardLayout = ({ children }) => {
 
           <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '2rem 0 1rem 0', paddingLeft: '1rem' }}>AI Tools</div>
           <NavLink to="/product-studio" className={({isActive}) => isActive ? 'sidebar-link active' : 'sidebar-link'}>
-            <Sparkles size={20} /> Product Studio <span className="badge badge-ai" style={{ marginLeft: 'auto' }}>AI</span>
+            <Wand2 size={20} /> AI Product Editor
+            <span style={{ marginLeft: 'auto', background: '#16a34a', color: 'white', fontSize: '0.6rem', padding: '2px 7px', borderRadius: '100px', fontWeight: 800, letterSpacing: '0.04em' }}>FREE</span>
+          </NavLink>
+          <NavLink to="/card-generator" className={({isActive}) => isActive ? 'sidebar-link active' : 'sidebar-link'}>
+            <Layers size={20} /> Brand Product Builder
+          </NavLink>
+          <NavLink to="/video-ad-gen" className={({isActive}) => isActive ? 'sidebar-link active' : 'sidebar-link'}>
+            <Video size={20} /> AI Video Ad Gen
+            <span style={{ marginLeft: 'auto', background: 'var(--primary)', color: 'white', fontSize: '0.6rem', padding: '2px 7px', borderRadius: '100px', fontWeight: 800, letterSpacing: '0.04em' }}>PRO</span>
           </NavLink>
           <NavLink to="/store-builder" className={({isActive}) => isActive ? 'sidebar-link active' : 'sidebar-link'}>
             <Store size={20} /> AI Store Builder
-          </NavLink>
-          <NavLink to="/card-generator" className={({isActive}) => isActive ? 'sidebar-link active' : 'sidebar-link'}>
-            <CreditCard size={20} /> Ad Generator
           </NavLink>
 
           <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '2rem 0 1rem 0', paddingLeft: '1rem' }}>Account</div>
@@ -72,12 +77,14 @@ const DashboardLayout = ({ children }) => {
 
         <div style={{ marginTop: 'auto', borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem', paddingLeft: '0.5rem' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', color: 'white' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'white' }}>
               {user.name?.charAt(0) || 'S'}
             </div>
             <div>
               <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'white' }}>{user.name || 'Seller'}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Free Plan</div>
+              <div style={{ fontSize: '0.75rem', color: user.subscription_tier === 'pro' ? '#a78bfa' : 'var(--text-muted)', fontWeight: 600 }}>
+                {user.subscription_tier === 'pro' ? '⚡ Pro Plan' : 'Free Plan'}
+              </div>
             </div>
           </div>
           <button onClick={handleLogout} className="sidebar-link" style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', color: '#ef4444' }}>
@@ -86,18 +93,14 @@ const DashboardLayout = ({ children }) => {
         </div>
       </aside>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <main className="dashboard-content">
-        <div className="animate-up">
-          {children}
-        </div>
+        <div className="animate-up">{children}</div>
       </main>
 
-      {/* ── AI Assistant (persistent floating widget) ── */}
       <AIAssistant />
     </div>
   );
 };
 
 export default DashboardLayout;
-

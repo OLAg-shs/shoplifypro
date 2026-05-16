@@ -23,6 +23,7 @@ import CardGenerator from './pages/CardGenerator';
 import Analytics from './pages/Analytics';
 import SellerSettings from './pages/SellerSettings';
 import ProductStudio from './pages/ProductStudio';
+import VideoAdGen from './pages/VideoAdGen';
 
 // Layout components
 import Header from './components/Header';
@@ -114,6 +115,7 @@ function App() {
           <Route path="/product-studio"   element={<SellerPage><ProductStudio /></SellerPage>} />
           <Route path="/store-builder"    element={<SellerPage><StoreBuilder /></SellerPage>} />
           <Route path="/card-generator"   element={<SellerPage><CardGenerator /></SellerPage>} />
+          <Route path="/video-ad-gen"     element={<SellerPage><VideoAdGen /></SellerPage>} />
           <Route path="/analytics"        element={<SellerPage><Analytics /></SellerPage>} />
           <Route path="/seller/settings"  element={<SellerPage><SellerSettings /></SellerPage>} />
 
