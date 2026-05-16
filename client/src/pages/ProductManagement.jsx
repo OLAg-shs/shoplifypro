@@ -54,8 +54,7 @@ const ProductManagement = () => {
     try {
       // Local AI removal using remote publicPath to prevent Vite 404 hangs
       const config = {
-        publicPath: "https://static.imgly.com/@imgly/background-removal-data/1.4.3/dist/",
-        fetchArgs: { mode: 'cors' },
+        publicPath: "https://unpkg.com/@imgly/background-removal-data@1.4.5/dist/",
         progress: (key, current, total) => {
           const percent = Math.round((current / total) * 100);
           setUploadStatus(`Loading AI Model... ${percent}%`);
