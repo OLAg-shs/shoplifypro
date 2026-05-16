@@ -243,45 +243,51 @@ router.post('/v2/process-image', protect, authorize('seller'), async (req, res) 
 
     console.log(`[AI] Processing ${action} using model: ${modelId}...`);
 
-    // ── STEALTH NATIVE CONNECTOR ───────────────────────────────────────────
-    // We build the hostname dynamically to bypass Vercel's "Smart" routing traps
+    // ── HUGGING FACE NATIVE TUNNEL ──────────────────────────────────────────
     const https = require('https');
-    const hfHost = ['api-inference', 'huggingface', 'co'].join('.');
+    const hfKey = String(process.env.HUGGINGFACE_API_KEY).trim();
     
+    // We use the direct endpoint which is most stable for Inference API
     const options = {
-      protocol: 'https:',
-      hostname: hfHost,
-      port: 443,
-      path: `/models/${modelId}`,
       method: 'POST',
+      hostname: 'api-inference.huggingface.co',
+      path: `/models/${modelId}`,
       headers: {
-        'Authorization': `Bearer ${String(process.env.HUGGINGFACE_API_KEY).trim()}`,
-        'Content-Type': 'application/octet-stream',
-        'Host': hfHost 
-      }
+        'Authorization': `Bearer ${hfKey}`,
+        'Content-Type': 'application/octet-stream'
+      },
+      timeout: 30000 // 30 second timeout
     };
 
-    console.log(`[AI] Stealth Tunneling to: ${hfHost}${options.path}`);
+    console.log(`[AI] Requesting: https://${options.hostname}${options.path}`);
 
     const hfReq = https.request(options, (hfRes) => {
+      console.log(`[AI] Response Status: ${hfRes.statusCode}`);
+      
       const chunks = [];
       hfRes.on('data', (chunk) => chunks.push(chunk));
-      hfRes.on('end', async () => {
+      
+      hfRes.on('end', () => {
         const resultBuffer = Buffer.concat(chunks);
         
         if (hfRes.statusCode !== 200) {
-          const errorText = resultBuffer.toString();
-          console.error('[AI API ERROR]', errorText);
-          if (errorText.includes('loading')) {
-            return res.status(503).json({ message: 'AI Engine is warming up. Please try again in 30 seconds.' });
-          }
-          return res.status(hfRes.statusCode).json({ message: 'AI processing failed.', error: errorText });
+          const errorMsg = resultBuffer.toString();
+          console.error('[AI API ERROR]', errorMsg);
+          return res.status(hfRes.statusCode).json({ message: 'AI processing failed.', error: errorMsg });
         }
 
         res.set('Content-Type', 'image/png');
         res.send(resultBuffer);
       });
     });
+
+    hfReq.on('error', (err) => {
+      console.error('[AI TUNNEL ERROR]', err);
+      res.status(500).json({ message: 'AI Connection failed.', error: err.message });
+    });
+
+    hfReq.write(imageData);
+    hfReq.end();
 
     hfReq.on('error', (e) => {
       console.error('[AI HTTPS ERROR]', e);
