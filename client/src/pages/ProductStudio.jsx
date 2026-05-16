@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Sparkles, 
   Upload, 
@@ -10,9 +10,72 @@ import {
   ShieldCheck,
   AlertCircle,
   Loader2,
-  ChevronRight
+  ChevronRight,
+  Play,
+  CheckCircle,
+  Zap,
+  Star,
+  ArrowRight,
+  Lock
 } from 'lucide-react';
 import { api } from '../utils/api';
+
+// ── Draggable Before/After Slider Component ───────────────────────────────────
+const BeforeAfterSlider = ({ beforeSrc, afterSrc }) => {
+  const [sliderPos, setSliderPos] = useState(50);
+  const containerRef = useRef(null);
+  const isDragging = useRef(false);
+
+  const handleMove = (clientX) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const pos = ((clientX - rect.left) / rect.width) * 100;
+    setSliderPos(Math.min(Math.max(pos, 2), 98));
+  };
+
+  const onMouseDown = () => { isDragging.current = true; };
+  const onMouseUp = () => { isDragging.current = false; };
+  const onMouseMove = (e) => { if (isDragging.current) handleMove(e.clientX); };
+  const onTouchMove = (e) => { handleMove(e.touches[0].clientX); };
+
+  useEffect(() => {
+    window.addEventListener('mouseup', onMouseUp);
+    return () => window.removeEventListener('mouseup', onMouseUp);
+  }, []);
+
+  return (
+    <div 
+      ref={containerRef}
+      onMouseMove={onMouseMove}
+      onTouchMove={onTouchMove}
+      style={{
+        position: 'relative', width: '100%', height: '420px',
+        borderRadius: '24px', overflow: 'hidden', cursor: 'ew-resize',
+        userSelect: 'none', boxShadow: '0 40px 80px -20px rgba(0,0,0,0.5)'
+      }}
+    >
+      {/* AFTER (right side - full image) */}
+      <img src={afterSrc} alt="After" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+      {/* BEFORE (left side - clipped) */}
+      <div style={{ position: 'absolute', inset: 0, width: `${sliderPos}%`, overflow: 'hidden' }}>
+        <img src={beforeSrc} alt="Before" style={{ width: `${100 / (sliderPos / 100)}%`, maxWidth: 'none', height: '100%', objectFit: 'cover' }} />
+        <div style={{ position: 'absolute', top: '1rem', left: '1rem', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, backdropFilter: 'blur(4px)' }}>BEFORE</div>
+      </div>
+      {/* Labels */}
+      <div style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'linear-gradient(135deg,#7c3aed,#ec4899)', color: 'white', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}>AFTER</div>
+      {/* Divider line */}
+      <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${sliderPos}%`, width: '3px', background: 'white', transform: 'translateX(-50%)', boxShadow: '0 0 20px rgba(255,255,255,0.5)' }}>
+        <div 
+          onMouseDown={onMouseDown}
+          onTouchStart={() => {}}
+          style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '48px', height: '48px', borderRadius: '50%', background: 'white', boxShadow: '0 4px 20px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'ew-resize', zIndex: 10 }}
+        >
+          <span style={{ fontSize: '1.2rem', color: '#7c3aed', fontWeight: 900 }}>⇔</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ProductStudio = () => {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -149,155 +212,112 @@ const ProductStudio = () => {
 
   // ── PAYWALL UI ─────────────────────────────────────────────────────────────
   if (!isPro) {
+    const steps = [
+      { num: '01', icon: <Upload size={28} />, title: 'Upload Your Product', desc: 'Take any photo with your phone. Messy background, bad lighting—it doesn\'t matter. Upload it raw.' },
+      { num: '02', icon: <Wand2 size={28} />, title: 'Choose Your AI Action', desc: 'Remove the background instantly, or describe any scene and the AI generates a professional studio backdrop for you.' },
+      { num: '03', icon: <Download size={28} />, title: 'Download & Sell', desc: 'Export your studio-quality image in seconds and upload it to your store. Watch your conversion rate climb.' },
+    ];
+
     return (
-      <div className="paywall-container">
-        <div className="paywall-hero">
-          <div className="paywall-badge"><Sparkles size={16} /> EAGLE CHOICE PRO</div>
-          <h1>Unlock the Ultimate <br/>AI Video & Photo Studio</h1>
-          <p>Stop paying thousands for professional photoshoots. Generate studio-quality backgrounds, upscaled images, and soon, dynamic video ads—all in one click.</p>
-          
-          <button className="upgrade-btn" onClick={handleCheckout} disabled={isProcessing}>
-            {isProcessing ? <Loader2 size={24} className="spinner" /> : <ShieldCheck size={24} />}
-            {isProcessing ? 'Connecting to Secure Checkout...' : 'Upgrade Now - $10 / Month'}
-          </button>
-          <span className="secure-text">Secure payment via Paystack. Cancel anytime.</span>
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem 1rem' }}>
+
+        {/* ── HERO ── */}
+        <div style={{ textAlign: 'center', padding: '4rem 1rem 3rem' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, rgba(124,58,237,0.15), rgba(236,72,153,0.15))', border: '1px solid rgba(124,58,237,0.3)', color: '#a78bfa', padding: '8px 18px', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.06em', marginBottom: '2rem' }}>
+            <Sparkles size={14} /> EAGLE CHOICE PRO — AI STUDIO
+          </div>
+          <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 900, lineHeight: 1.05, margin: '0 0 1.5rem', background: 'linear-gradient(135deg, #fff 30%, #a5b4fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Turn Any Phone Photo Into<br/>a $5,000 Studio Shot
+          </h1>
+          <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', maxWidth: '560px', margin: '0 auto 2.5rem', lineHeight: 1.7 }}>
+            Your competitors are paying agencies thousands. You won't have to. The Eagle Choice AI Studio does it in seconds.
+          </p>
+          <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
+            {['Background Removal', 'AI Scene Generator', 'Smart Upscaling', 'Video Ads (Soon)'].map(f => (
+              <span key={f} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#a78bfa', fontSize: '0.9rem', fontWeight: 600 }}>
+                <CheckCircle size={16} style={{ color: '#34d399' }} /> {f}
+              </span>
+            ))}
+          </div>
         </div>
 
-        <div className="feature-showcase-grid">
-          <div className="showcase-card">
-            <div className="showcase-icon"><ImageIcon size={32} /></div>
-            <h3>Infinite Backgrounds</h3>
-            <p>Place your raw products into any scene imaginable. Marble podiums, sunny beaches, minimalist studios—just type what you want.</p>
+        {/* ── BEFORE / AFTER SLIDER ── */}
+        <div style={{ marginBottom: '1rem' }}>
+          <p style={{ textAlign: 'center', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+            👇 Drag the slider to see the transformation
+          </p>
+          <BeforeAfterSlider
+            beforeSrc="/demo-before-after.png"
+            afterSrc="/demo-perfume.png"
+          />
+        </div>
+
+        {/* ── HOW IT WORKS ── */}
+        <div style={{ margin: '5rem 0' }}>
+          <h2 style={{ textAlign: 'center', fontSize: '2rem', fontWeight: 800, color: 'white', marginBottom: '0.75rem' }}>How It Works</h2>
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '3rem' }}>Three steps. Less than 60 seconds. Professional results every time.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
+            {steps.map((s, i) => (
+              <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '2.5rem', transition: 'all 0.3s ease', position: 'relative', overflow: 'hidden' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.08)'; e.currentTarget.style.borderColor = 'rgba(124,58,237,0.3)'; e.currentTarget.style.transform = 'translateY(-6px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              >
+                <div style={{ fontSize: '5rem', fontWeight: 900, color: 'rgba(124,58,237,0.08)', position: 'absolute', top: '-0.5rem', right: '1.5rem', lineHeight: 1, fontFamily: 'monospace' }}>{s.num}</div>
+                <div style={{ width: '56px', height: '56px', background: 'linear-gradient(135deg, rgba(124,58,237,0.2), rgba(236,72,153,0.2))', border: '1px solid rgba(124,58,237,0.3)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a78bfa', marginBottom: '1.5rem' }}>
+                  {s.icon}
+                </div>
+                <h3 style={{ color: 'white', fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.75rem' }}>{s.title}</h3>
+                <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>{s.desc}</p>
+              </div>
+            ))}
           </div>
-          <div className="showcase-card">
-            <div className="showcase-icon"><Maximize size={32} /></div>
-            <h3>Smart Upscaling</h3>
-            <p>Turn blurry smartphone photos into razor-sharp 4K assets that command premium prices from buyers.</p>
+        </div>
+
+        {/* ── PRICING / CTA ── */}
+        <div style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(236,72,153,0.08))', border: '1px solid rgba(124,58,237,0.25)', borderRadius: '32px', padding: '3.5rem', textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(52,211,153,0.15)', color: '#34d399', padding: '6px 14px', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 700, marginBottom: '1.5rem' }}>
+            <Zap size={14} /> LIMITED OFFER — Only $10/month
           </div>
-          <div className="showcase-card" style={{ borderColor: 'var(--primary)' }}>
-            <div className="showcase-icon" style={{ color: 'var(--primary)' }}><Sparkles size={32} /></div>
-            <h3>Coming Soon: Video Ads</h3>
-            <p>Pro members will get early access to our Text-to-Video engine, generating scroll-stopping TikTok and Instagram ads instantly.</p>
+          <h2 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'white', marginBottom: '1rem', lineHeight: 1.1 }}>
+            Get Unlimited AI Generations<br/>for Less Than a Coffee a Week
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', marginBottom: '2.5rem', maxWidth: '500px', margin: '0 auto 2.5rem' }}>
+            100 AI credits every 30 days. Background removal, scene generation, upscaling, and early access to video ad creation.
+          </p>
+
+          <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2.5rem' }}>
+            {[
+              { label: '100', sub: 'AI Credits/Month' },
+              { label: '30s', sub: 'Average Processing Time' },
+              { label: '∞', sub: 'Store Backgrounds' },
+            ].map(s => (
+              <div key={s.label} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '2.5rem', fontWeight: 900, background: 'linear-gradient(135deg,#a78bfa,#ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{s.label}</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>{s.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={handleCheckout}
+            disabled={isProcessing}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', padding: '1.2rem 3rem', background: 'linear-gradient(135deg, #7c3aed, #ec4899)', color: 'white', border: 'none', borderRadius: '16px', fontSize: '1.2rem', fontWeight: 700, cursor: isProcessing ? 'not-allowed' : 'pointer', transition: 'all 0.3s ease', boxShadow: '0 10px 40px -10px rgba(236,72,153,0.6)', opacity: isProcessing ? 0.7 : 1 }}
+            onMouseEnter={e => { if (!isProcessing) { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 20px 50px -10px rgba(236,72,153,0.8)'; } }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 40px -10px rgba(236,72,153,0.6)'; }}
+          >
+            {isProcessing ? <Loader2 size={24} style={{ animation: 'spin 1s linear infinite' }} /> : <Zap size={24} />}
+            {isProcessing ? 'Connecting to Secure Checkout...' : 'Unlock AI Studio — $10/Month'}
+          </button>
+
+          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {['🔒 Secured by Paystack', '✓ Cancel Anytime', '✓ Instant Access After Payment'].map(t => (
+              <span key={t} style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{t}</span>
+            ))}
           </div>
         </div>
 
         <style>{`
-          .paywall-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-          }
-          .paywall-hero {
-            text-align: center;
-            max-width: 700px;
-            margin-top: 4rem;
-            margin-bottom: 4rem;
-          }
-          .paywall-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(236, 72, 153, 0.1));
-            color: var(--primary);
-            padding: 8px 16px;
-            border-radius: 100px;
-            font-size: 0.85rem;
-            font-weight: 800;
-            letter-spacing: 0.05em;
-            margin-bottom: 1.5rem;
-            border: 1px solid rgba(124, 58, 237, 0.2);
-          }
-          .paywall-hero h1 {
-            font-size: 3.5rem;
-            font-weight: 900;
-            line-height: 1.1;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(to right, white, #a5b4fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-          }
-          .paywall-hero p {
-            font-size: 1.25rem;
-            color: var(--text-muted);
-            line-height: 1.6;
-            margin-bottom: 2.5rem;
-          }
-          .upgrade-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            width: 100%;
-            max-width: 400px;
-            margin: 0 auto;
-            padding: 1.2rem;
-            background: linear-gradient(135deg, #7c3aed, #ec4899);
-            color: white;
-            border: none;
-            border-radius: 16px;
-            font-size: 1.2rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 10px 30px -10px rgba(236, 72, 153, 0.5);
-          }
-          .upgrade-btn:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px -10px rgba(236, 72, 153, 0.7);
-          }
-          .secure-text {
-            display: block;
-            margin-top: 1rem;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-          }
-          .feature-showcase-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-            width: 100%;
-          }
-          .showcase-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--glass-border);
-            padding: 2.5rem;
-            border-radius: 24px;
-            transition: all 0.3s ease;
-          }
-          .showcase-card:hover {
-            background: rgba(255, 255, 255, 0.05);
-            transform: translateY(-5px);
-          }
-          .showcase-icon {
-            width: 64px;
-            height: 64px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            margin-bottom: 1.5rem;
-          }
-          .showcase-card h3 {
-            color: white;
-            font-size: 1.3rem;
-            margin-bottom: 1rem;
-          }
-          .showcase-card p {
-            color: var(--text-muted);
-            line-height: 1.6;
-          }
-          .spinner {
-            animation: spin 1s linear infinite;
-          }
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
+          @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         `}</style>
       </div>
     );
