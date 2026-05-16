@@ -121,6 +121,189 @@ const ProductStudio = () => {
     setAdPrompt('');
   };
 
+  const handleCheckout = async () => {
+    setIsProcessing(true);
+    try {
+      const response = await fetch('/api/billing/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await response.json();
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
+      } else {
+        alert('Payment initialization failed: ' + data.message);
+        setIsProcessing(false);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error connecting to payment gateway.');
+      setIsProcessing(false);
+    }
+  };
+
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isPro = user.subscription_tier === 'pro';
+
+  // ── PAYWALL UI ─────────────────────────────────────────────────────────────
+  if (!isPro) {
+    return (
+      <div className="paywall-container">
+        <div className="paywall-hero">
+          <div className="paywall-badge"><Sparkles size={16} /> EAGLE CHOICE PRO</div>
+          <h1>Unlock the Ultimate <br/>AI Video & Photo Studio</h1>
+          <p>Stop paying thousands for professional photoshoots. Generate studio-quality backgrounds, upscaled images, and soon, dynamic video ads—all in one click.</p>
+          
+          <button className="upgrade-btn" onClick={handleCheckout} disabled={isProcessing}>
+            {isProcessing ? <Loader2 size={24} className="spinner" /> : <ShieldCheck size={24} />}
+            {isProcessing ? 'Connecting to Secure Checkout...' : 'Upgrade Now - $10 / Month'}
+          </button>
+          <span className="secure-text">Secure payment via Paystack. Cancel anytime.</span>
+        </div>
+
+        <div className="feature-showcase-grid">
+          <div className="showcase-card">
+            <div className="showcase-icon"><ImageIcon size={32} /></div>
+            <h3>Infinite Backgrounds</h3>
+            <p>Place your raw products into any scene imaginable. Marble podiums, sunny beaches, minimalist studios—just type what you want.</p>
+          </div>
+          <div className="showcase-card">
+            <div className="showcase-icon"><Maximize size={32} /></div>
+            <h3>Smart Upscaling</h3>
+            <p>Turn blurry smartphone photos into razor-sharp 4K assets that command premium prices from buyers.</p>
+          </div>
+          <div className="showcase-card" style={{ borderColor: 'var(--primary)' }}>
+            <div className="showcase-icon" style={{ color: 'var(--primary)' }}><Sparkles size={32} /></div>
+            <h3>Coming Soon: Video Ads</h3>
+            <p>Pro members will get early access to our Text-to-Video engine, generating scroll-stopping TikTok and Instagram ads instantly.</p>
+          </div>
+        </div>
+
+        <style>{`
+          .paywall-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          .paywall-hero {
+            text-align: center;
+            max-width: 700px;
+            margin-top: 4rem;
+            margin-bottom: 4rem;
+          }
+          .paywall-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(236, 72, 153, 0.1));
+            color: var(--primary);
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(124, 58, 237, 0.2);
+          }
+          .paywall-hero h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(to right, white, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          }
+          .paywall-hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 2.5rem;
+          }
+          .upgrade-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 1.2rem;
+            background: linear-gradient(135deg, #7c3aed, #ec4899);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px -10px rgba(236, 72, 153, 0.5);
+          }
+          .upgrade-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -10px rgba(236, 72, 153, 0.7);
+          }
+          .secure-text {
+            display: block;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+          }
+          .feature-showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            width: 100%;
+          }
+          .showcase-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            padding: 2.5rem;
+            border-radius: 24px;
+            transition: all 0.3s ease;
+          }
+          .showcase-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-5px);
+          }
+          .showcase-icon {
+            width: 64px;
+            height: 64px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-bottom: 1.5rem;
+          }
+          .showcase-card h3 {
+            color: white;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+          }
+          .showcase-card p {
+            color: var(--text-muted);
+            line-height: 1.6;
+          }
+          .spinner {
+            animation: spin 1s linear infinite;
+          }
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // ── STUDIO UI (FOR PRO USERS) ──────────────────────────────────────────────
   return (
     <div className="studio-container">
       <div className="studio-header">
@@ -128,7 +311,7 @@ const ProductStudio = () => {
           <Sparkles size={14} /> AI POWERED
         </div>
         <h1>Product AI Studio</h1>
-        <p>Transform your product photography into professional-grade assets in seconds.</p>
+        <p>Transform your product photography into professional-grade assets in seconds. Tokens left: <strong>{user.ai_credits}</strong></p>
       </div>
 
       <div className="studio-tabs">
