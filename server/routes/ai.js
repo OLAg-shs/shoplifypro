@@ -243,59 +243,28 @@ router.post('/v2/process-image', protect, authorize('seller'), async (req, res) 
 
     console.log(`[AI] Processing ${action} using model: ${modelId}...`);
 
-    // ── HUGGING FACE NATIVE TUNNEL ──────────────────────────────────────────
-    const https = require('https');
+    // ── STABLE AXIOS CONNECTOR ──────────────────────────────────────────
+    const axios = require('axios');
     const hfKey = String(process.env.HUGGINGFACE_API_KEY).trim();
     
-    // We use the direct endpoint which is most stable for Inference API
-    const options = {
-      method: 'POST',
-      hostname: 'api-inference.huggingface.co',
-      path: `/models/${modelId}`,
+    console.log(`[AI] Sending binary request to: https://api-inference.huggingface.co/models/${modelId}`);
+
+    const hfResponse = await axios({
+      method: 'post',
+      url: `https://api-inference.huggingface.co/models/${modelId}`,
+      data: imageData,
       headers: {
         'Authorization': `Bearer ${hfKey}`,
         'Content-Type': 'application/octet-stream'
       },
-      timeout: 30000 // 30 second timeout
-    };
-
-    console.log(`[AI] Requesting: https://${options.hostname}${options.path}`);
-
-    const hfReq = https.request(options, (hfRes) => {
-      console.log(`[AI] Response Status: ${hfRes.statusCode}`);
-      
-      const chunks = [];
-      hfRes.on('data', (chunk) => chunks.push(chunk));
-      
-      hfRes.on('end', () => {
-        const resultBuffer = Buffer.concat(chunks);
-        
-        if (hfRes.statusCode !== 200) {
-          const errorMsg = resultBuffer.toString();
-          console.error('[AI API ERROR]', errorMsg);
-          return res.status(hfRes.statusCode).json({ message: 'AI processing failed.', error: errorMsg });
-        }
-
-        res.set('Content-Type', 'image/png');
-        res.send(resultBuffer);
-      });
+      responseType: 'arraybuffer',
+      timeout: 60000 // 60 second timeout for processing
     });
 
-    hfReq.on('error', (err) => {
-      console.error('[AI TUNNEL ERROR]', err);
-      res.status(500).json({ message: 'AI Connection failed.', error: err.message });
-    });
-
-    hfReq.write(imageData);
-    hfReq.end();
-
-    hfReq.on('error', (e) => {
-      console.error('[AI HTTPS ERROR]', e);
-      res.status(500).json({ message: 'AI processing failed.', error: e.message });
-    });
-
-    hfReq.write(imageData);
-    hfReq.end();
+    console.log(`[AI] Success! Received ${hfResponse.data.byteLength} bytes.`);
+    
+    res.set('Content-Type', 'image/png');
+    res.send(Buffer.from(hfResponse.data));
   } catch (error) {
     console.error('[AI PROCESS ERROR]', error);
     res.status(500).json({ message: 'AI processing failed.', error: error.message });
