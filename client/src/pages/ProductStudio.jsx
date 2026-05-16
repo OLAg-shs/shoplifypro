@@ -37,36 +37,63 @@ const ProductStudio = () => {
     setProcessedUrl(null);
     setIsProcessing(true);
     setIsError(false);
-    setStatus('Sending to AI Neural Engine...');
+    setStatus('Connecting to Neural Engine...');
 
     try {
-      // ── SERVER-SIDE AI ─────────────────────────────────────────────────────
-      // We use the new backend route which is 100% reliable and free
-      const formData = new FormData();
-      formData.append('image', file);
-      formData.append('action', 'remove-bg');
-      
-      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/ai/v2/process-image`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
-      });
+      // ── ENGINE 1: GRADIO STEALTH TUNNEL ──────────────────────────────────
+      // This is fast and uses server power.
+      try {
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('action', 'remove-bg');
+        
+        const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/ai/v2/process-image`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: formData
+        });
 
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.message || 'AI processing failed');
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          setProcessedUrl(url);
+          setStatus('');
+          return; // Success!
+        }
+      } catch (serverErr) {
+        console.warn('Server engine busy, switching to Local Neural Engine...');
       }
 
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+      // ── ENGINE 2: ON-DEVICE PRIVACY ENGINE (FAIL-SAFE) ────────────────────
+      // If server is down/404, we run the AI directly in the browser!
+      setStatus('Initializing Private Neural Engine (First load takes 15s)...');
+      
+      const { pipeline, env } = await import('@xenova/transformers');
+      // Set local model path for better reliability
+      env.allowLocalModels = false; 
+
+      const remover = await pipeline('img2img', 'Xenova/modnet-public', {
+        progress_callback: (p) => {
+          if (p.status === 'progress') {
+            setStatus(`Downloading Neural Brain: ${Math.round(p.progress)}%`);
+          }
+        }
+      });
+
+      setStatus('Processing locally on your device...');
+      const output = await remover(URL.createObjectURL(file));
+      
+      // Convert the output to a blob for our UI
+      const url = URL.createObjectURL(output);
       setProcessedUrl(url);
       setStatus('');
+
     } catch (err) {
-      console.error('AI error:', err);
+      console.error('AI total failure:', err);
       setIsError(true);
-      setStatus(err.message || 'Background removal failed. Please check your internet.');
+      setStatus('Neural Engines are currently unavailable. Please check your connection.');
     } finally {
       setIsProcessing(false);
     }
