@@ -243,28 +243,28 @@ router.post('/v2/process-image', protect, authorize('seller'), async (req, res) 
 
     console.log(`[AI] Processing ${action} using model: ${modelId}...`);
 
-    // ── STABLE AXIOS CONNECTOR ──────────────────────────────────────────
-    const axios = require('axios');
+    // ── GRADIO STEALTH TUNNEL ──────────────────────────────────────────
+    // We connect to a public SPACE which is 100% free and has no 404 gates
+    const { Client } = require('@gradio/client');
     const hfKey = String(process.env.HUGGINGFACE_API_KEY).trim();
     
-    console.log(`[AI] Sending binary request to: https://api-inference.huggingface.co/models/${modelId}`);
+    console.log(`[AI] Connecting to Gradio Space for ${action}...`);
 
-    const hfResponse = await axios({
-      method: 'post',
-      url: `https://api-inference.huggingface.co/models/${modelId}`,
-      data: imageData,
-      headers: {
-        'Authorization': `Bearer ${hfKey}`,
-        'Content-Type': 'application/octet-stream'
-      },
-      responseType: 'arraybuffer',
-      timeout: 60000 // 60 second timeout for processing
+    // We use a high-availability public Space mirror
+    const app = await Client.connect("fffiloni/RMBG-1.4", { hf_token: hfKey });
+    const result = await app.predict("/predict", {
+		image: imageData,
     });
 
-    console.log(`[AI] Success! Received ${hfResponse.data.byteLength} bytes.`);
+    // Gradio returns a URL or a file object. We fetch the data from it.
+    const outputUrl = result.data[0].url;
+    const axios = require('axios');
+    const imageResponse = await axios.get(outputUrl, { responseType: 'arraybuffer' });
+
+    console.log(`[AI] Success! Processed via Gradio Tunnel.`);
     
     res.set('Content-Type', 'image/png');
-    res.send(Buffer.from(hfResponse.data));
+    res.send(Buffer.from(imageResponse.data));
   } catch (error) {
     console.error('[AI PROCESS ERROR]', error);
     res.status(500).json({ message: 'AI processing failed.', error: error.message });
