@@ -53,7 +53,7 @@ const DashboardLayout = ({ children }) => {
             <TrendingUp size={20} /> Analytics
           </NavLink>
 
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '2rem 0 1rem 0', paddingLeft: '1rem' }}>AI Tools</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '1rem 0 0.5rem 0', paddingLeft: '1rem' }}>AI Tools</div>
           <NavLink to="/product-studio" className={({isActive}) => isActive ? 'sidebar-link active' : 'sidebar-link'}>
             <Wand2 size={20} /> AI Product Editor
             <span style={{ marginLeft: 'auto', background: '#16a34a', color: 'white', fontSize: '0.6rem', padding: '2px 7px', borderRadius: '100px', fontWeight: 800, letterSpacing: '0.04em' }}>FREE</span>
@@ -69,7 +69,7 @@ const DashboardLayout = ({ children }) => {
             <Store size={20} /> AI Store Builder
           </NavLink>
 
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '2rem 0 1rem 0', paddingLeft: '1rem' }}>Account</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '1rem 0 0.5rem 0', paddingLeft: '1rem' }}>Account</div>
           <NavLink to="/seller/settings" className={({isActive}) => isActive ? 'sidebar-link active' : 'sidebar-link'}>
             <Settings size={20} /> Settings
           </NavLink>

@@ -710,6 +710,13 @@ h1, h2, h3, h4, h5, h6 {
   position: sticky;
   top: 0;
   height: 100vh;
+  overflow-y: auto;
+  scrollbar-width: none; /* Hide scrollbar for Chrome/Safari */
+  -ms-overflow-style: none; /* Hide scrollbar for IE/Edge */
+}
+
+.sidebar::-webkit-scrollbar {
+  display: none; /* Hide scrollbar for Chrome/Safari */
 }
 
 .sidebar-link {
