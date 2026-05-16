@@ -232,34 +232,44 @@ router.post('/process-image', protect, authorize('seller'), async (req, res) => 
       return res.status(400).json({ message: 'No image uploaded.' });
     }
 
-    const { action } = req.body; // 'remove-bg' or 'upscale'
+    const { action } = req.body; 
     const imageFile = req.files.image;
-    
-    // Read the file buffer
     const imageData = fs.readFileSync(imageFile.tempFilePath);
 
-    let result;
-    if (action === 'remove-bg') {
-      console.log('[AI] Removing background using RMBG-1.4...');
-      // Hugging Face RMBG-1.4 is state-of-the-art for background removal
-      result = await hf.imageSegmentation({
-        model: 'briaai/RMBG-1.4',
-        data: imageData,
-      });
-    } else if (action === 'upscale') {
-      console.log('[AI] Upscaling image...');
-      result = await hf.imageToImage({
-        model: 'stabilityai/stable-diffusion-x4-upscaler',
-        inputs: new Blob([imageData]),
-      });
-    } else {
-      return res.status(400).json({ message: 'Invalid action. Use "remove-bg" or "upscale".' });
+    let modelId = 'briaai/RMBG-1.4'; // Default to state-of-the-art
+    if (action === 'upscale') {
+      modelId = 'stabilityai/stable-diffusion-x4-upscaler';
     }
 
-    // Convert result to Buffer for response
-    // hf.imageSegmentation returns a Blob for the image
-    const arrayBuffer = await result.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    console.log(`[AI] Processing ${action} using model: ${modelId}...`);
+
+    // ── UNIVERSAL AI CONNECTOR ─────────────────────────────────────────────
+    // Direct fetch is more stable than the library for certain API Keys
+    const response = await fetch(
+      `https://api-inference.huggingface.co/models/${modelId}`,
+      {
+        headers: { 
+          Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        method: "POST",
+        body: imageData,
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[AI API ERROR]', errorText);
+      
+      // If the model is still loading, tell the user to wait a second
+      if (errorText.includes('loading')) {
+        return res.status(503).json({ message: 'AI Engine is warming up. Please try again in 20 seconds.' });
+      }
+      
+      throw new Error(`AI Engine responded with ${response.status}: ${errorText}`);
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
 
     res.set('Content-Type', 'image/png');
     res.send(buffer);
