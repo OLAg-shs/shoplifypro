@@ -52,9 +52,9 @@ const ProductManagement = () => {
     setUploadStatus('Processing with Neural Engine...');
 
     try {
-      // Local AI removal using remote proxy to prevent AdBlockers from blocking CDNs
+      // Local AI removal using fully local models folder
       const config = {
-        publicPath: `${window.location.origin}/api/ai/models/`,
+        publicPath: `${window.location.origin}/models/`,
         progress: (key, current, total) => {
           const percent = Math.round((current / total) * 100);
           setUploadStatus(`Loading AI Model... ${percent}%`);

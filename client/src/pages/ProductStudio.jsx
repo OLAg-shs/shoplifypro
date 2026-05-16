@@ -41,7 +41,7 @@ const ProductStudio = () => {
 
     try {
       const config = {
-        publicPath: `${window.location.origin}/api/ai/models/`,
+        publicPath: `${window.location.origin}/models/`,
         progress: (key, current, total) => {
           const percent = Math.round((current / total) * 100);
           setStatus(`Downloading AI Models... ${percent}%`);
