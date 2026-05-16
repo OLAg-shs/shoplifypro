@@ -19,6 +19,8 @@ import {
   Lock
 } from 'lucide-react';
 import { api } from '../utils/api';
+import demoBeforeImg from '/demo-before-after.png';
+import demoAfterImg from '/demo-perfume.png';
 
 // ── Draggable Before/After Slider Component ───────────────────────────────────
 const BeforeAfterSlider = ({ beforeSrc, afterSrc }) => {
@@ -33,49 +35,83 @@ const BeforeAfterSlider = ({ beforeSrc, afterSrc }) => {
     setSliderPos(Math.min(Math.max(pos, 2), 98));
   };
 
-  const onMouseDown = () => { isDragging.current = true; };
+  const onMouseDown = (e) => { e.preventDefault(); isDragging.current = true; };
   const onMouseUp = () => { isDragging.current = false; };
   const onMouseMove = (e) => { if (isDragging.current) handleMove(e.clientX); };
-  const onTouchMove = (e) => { handleMove(e.touches[0].clientX); };
+  const onTouchMove = (e) => { e.preventDefault(); handleMove(e.touches[0].clientX); };
+  const onTouchStart = () => { isDragging.current = true; };
+  const onTouchEnd = () => { isDragging.current = false; };
 
   useEffect(() => {
     window.addEventListener('mouseup', onMouseUp);
     return () => window.removeEventListener('mouseup', onMouseUp);
   }, []);
 
+  const imgStyle = {
+    position: 'absolute', top: 0, left: 0,
+    width: '100%', height: '100%', objectFit: 'cover', display: 'block'
+  };
+
   return (
-    <div 
+    <div
       ref={containerRef}
       onMouseMove={onMouseMove}
       onTouchMove={onTouchMove}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
       style={{
         position: 'relative', width: '100%', height: '420px',
         borderRadius: '24px', overflow: 'hidden', cursor: 'ew-resize',
-        userSelect: 'none', boxShadow: '0 40px 80px -20px rgba(0,0,0,0.5)'
+        userSelect: 'none', background: '#111',
+        boxShadow: '0 40px 80px -20px rgba(0,0,0,0.6)'
       }}
     >
-      {/* AFTER (right side - full image) */}
-      <img src={afterSrc} alt="After" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-      {/* BEFORE (left side - clipped) */}
-      <div style={{ position: 'absolute', inset: 0, width: `${sliderPos}%`, overflow: 'hidden' }}>
-        <img src={beforeSrc} alt="Before" style={{ width: `${100 / (sliderPos / 100)}%`, maxWidth: 'none', height: '100%', objectFit: 'cover' }} />
-        <div style={{ position: 'absolute', top: '1rem', left: '1rem', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, backdropFilter: 'blur(4px)' }}>BEFORE</div>
+      {/* AFTER — full background image */}
+      <img src={afterSrc} alt="After AI" style={imgStyle} />
+
+      {/* BEFORE — clipped to left of slider */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0,
+        width: `${sliderPos}%`, height: '100%', overflow: 'hidden'
+      }}>
+        <img src={beforeSrc} alt="Before AI" style={{ ...imgStyle, width: `${(100 / sliderPos) * 100}%` }} />
       </div>
+
       {/* Labels */}
-      <div style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'linear-gradient(135deg,#7c3aed,#ec4899)', color: 'white', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}>AFTER</div>
-      {/* Divider line */}
-      <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${sliderPos}%`, width: '3px', background: 'white', transform: 'translateX(-50%)', boxShadow: '0 0 20px rgba(255,255,255,0.5)' }}>
-        <div 
+      <div style={{ position: 'absolute', top: '1rem', left: '1rem', background: 'rgba(0,0,0,0.7)', color: 'white', padding: '5px 12px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', backdropFilter: 'blur(8px)', zIndex: 5 }}>
+        📱 BEFORE
+      </div>
+      <div style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'linear-gradient(135deg,#7c3aed,#ec4899)', color: 'white', padding: '5px 12px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', zIndex: 5 }}>
+        ✨ AFTER AI
+      </div>
+
+      {/* Divider */}
+      <div style={{
+        position: 'absolute', top: 0, bottom: 0,
+        left: `${sliderPos}%`, width: '3px',
+        background: 'white', transform: 'translateX(-50%)',
+        boxShadow: '0 0 15px rgba(255,255,255,0.6)', zIndex: 10
+      }}>
+        <div
           onMouseDown={onMouseDown}
-          onTouchStart={() => {}}
-          style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '48px', height: '48px', borderRadius: '50%', background: 'white', boxShadow: '0 4px 20px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'ew-resize', zIndex: 10 }}
+          style={{
+            position: 'absolute', top: '50%', left: '50%',
+            transform: 'translate(-50%,-50%)',
+            width: '52px', height: '52px', borderRadius: '50%',
+            background: 'white',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'ew-resize', zIndex: 11, fontSize: '1.3rem', color: '#7c3aed', fontWeight: 900
+          }}
         >
-          <span style={{ fontSize: '1.2rem', color: '#7c3aed', fontWeight: 900 }}>⇔</span>
+          ⇔
         </div>
       </div>
     </div>
   );
 };
+
+
 
 const ProductStudio = () => {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -247,8 +283,8 @@ const ProductStudio = () => {
             👇 Drag the slider to see the transformation
           </p>
           <BeforeAfterSlider
-            beforeSrc="/demo-before-after.png"
-            afterSrc="/demo-perfume.png"
+            beforeSrc={demoBeforeImg}
+            afterSrc={demoAfterImg}
           />
         </div>
 
