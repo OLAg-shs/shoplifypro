@@ -4,9 +4,47 @@ const { supabase } = require('../supabaseClient');
 const { protect, authorize } = require('../middleware/auth');
 const { HfInference } = require('@huggingface/inference');
 const fs = require('fs');
-const path = require('path');
 
 const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
+
+// ── SaaS Monetization Middleware ─────────────────────────────────────────────
+const requireCredits = async (req, res, next) => {
+  try {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('subscription_tier, ai_credits, subscription_expires_at')
+      .eq('id', req.user.id)
+      .single();
+
+    if (error || !user) {
+      return res.status(500).json({ message: 'Error checking AI credits' });
+    }
+
+    // 1. Check expiration
+    if (user.subscription_tier === 'pro' && user.subscription_expires_at) {
+      const expireDate = new Date(user.subscription_expires_at);
+      if (new Date() > expireDate) {
+        // Expired! Demote to free instantly.
+        await supabase.from('users').update({ subscription_tier: 'free', ai_credits: 0 }).eq('id', req.user.id);
+        return res.status(403).json({ message: 'Your Eagle Choice Pro subscription has expired. Please renew to access AI tools.', expired: true });
+      }
+    } else if (user.subscription_tier !== 'pro') {
+        return res.status(403).json({ message: 'AI Tools are locked. Please upgrade to Eagle Choice Pro.', locked: true });
+    }
+
+    // 2. Check credits
+    if (user.ai_credits <= 0) {
+      return res.status(403).json({ message: 'You have run out of AI credits for this month.', outOfCredits: true });
+    }
+
+    // Attach credits to request so routes can deduct them based on operation cost
+    req.ai_credits = user.ai_credits;
+    next();
+  } catch (err) {
+    console.error('[REQUIRE CREDITS ERROR]', err);
+    res.status(500).json({ message: 'Server error checking credits' });
+  }
+};
 
 // @desc    Generate a store theme using AI-like logic based on a prompt
 // @route   POST /api/ai/generate-theme
@@ -187,7 +225,7 @@ router.get('/trending', protect, async (req, res) => {
 // @desc    Process image (Background Removal or Upscaling)
 // @route   POST /api/ai/process-image
 // @access  Private (Seller only)
-router.post('/process-image', protect, authorize('seller'), async (req, res) => {
+router.post('/process-image', protect, authorize('seller'), requireCredits, async (req, res) => {
   try {
     if (!req.files || !req.files.image) {
       return res.status(400).json({ message: 'No image uploaded.' });
@@ -218,6 +256,9 @@ router.post('/process-image', protect, authorize('seller'), async (req, res) => 
     const arrayBuffer = await result.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
+    // DEDUCT 1 CREDIT ON SUCCESS
+    await supabase.from('users').update({ ai_credits: req.ai_credits - 1 }).eq('id', req.user.id);
+
     res.set('Content-Type', 'image/png');
     res.send(buffer);
   } catch (error) {
@@ -229,7 +270,7 @@ router.post('/process-image', protect, authorize('seller'), async (req, res) => 
 // @desc    Generate Unique AI Ad background
 // @route   POST /api/ai/generate-ad
 // @access  Private (Seller only)
-router.post('/generate-ad', protect, authorize('seller'), async (req, res) => {
+router.post('/generate-ad', protect, authorize('seller'), requireCredits, async (req, res) => {
   try {
     const { prompt } = req.body;
     if (!prompt) {
@@ -244,6 +285,9 @@ router.post('/generate-ad', protect, authorize('seller'), async (req, res) => {
 
     const arrayBuffer = await result.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
+    // DEDUCT 1 CREDIT ON SUCCESS
+    await supabase.from('users').update({ ai_credits: req.ai_credits - 1 }).eq('id', req.user.id);
 
     res.set('Content-Type', 'image/png');
     res.send(buffer);

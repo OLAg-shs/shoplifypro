@@ -127,7 +127,7 @@ router.post('/login', loginLimiter, loginValidation, validate, async (req, res) 
     // 2. Fetch User metadata (role, status)
     let { data: user, error: fetchError } = await supabase
       .from('users')
-      .select('id, name, email, role, status')
+      .select('id, name, email, role, status, subscription_tier, ai_credits, subscription_expires_at')
       .eq('id', authData.user.id)
       .single();
 
@@ -148,9 +148,11 @@ router.post('/login', loginLimiter, loginValidation, validate, async (req, res) 
           email: authData.user.email,
           name: name,
           role: role,
-          status: status
+          status: status,
+          subscription_tier: 'free',
+          ai_credits: 0
         }])
-        .select('id, name, email, role, status')
+        .select('id, name, email, role, status, subscription_tier, ai_credits, subscription_expires_at')
         .single();
 
       if (healError) {
@@ -159,7 +161,7 @@ router.post('/login', loginLimiter, loginValidation, validate, async (req, res) 
            console.log(`[AUTH HEAL] User actually exists, skipping heal.`);
            const { data: existingUser } = await supabase
              .from('users')
-             .select('id, name, email, role, status')
+             .select('id, name, email, role, status, subscription_tier, ai_credits, subscription_expires_at')
              .eq('id', authData.user.id)
              .single();
            user = existingUser;
@@ -193,6 +195,9 @@ router.post('/login', loginLimiter, loginValidation, validate, async (req, res) 
       email: user.email,
       role: user.role,
       status: user.status,
+      subscription_tier: user.subscription_tier || 'free',
+      ai_credits: user.ai_credits || 0,
+      subscription_expires_at: user.subscription_expires_at,
       token: authData.session.access_token
     });
   } catch (error) {
@@ -208,7 +213,7 @@ router.get('/me', protect, async (req, res) => {
   try {
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, name, email, role, status, is_verified')
+      .select('id, name, email, role, status, is_verified, subscription_tier, ai_credits, subscription_expires_at')
       .eq('id', req.user.id)
       .single();
 
