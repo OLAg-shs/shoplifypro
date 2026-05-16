@@ -248,11 +248,13 @@ router.post('/v2/process-image', protect, authorize('seller'), async (req, res) 
     const https = require('https');
     
     const options = {
+      protocol: 'https:',
       hostname: 'api-inference.huggingface.co',
+      port: 443,
       path: `/models/${modelId}`,
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+        'Authorization': `Bearer ${String(process.env.HUGGINGFACE_API_KEY).trim()}`,
         'Content-Type': 'application/octet-stream'
       }
     };
