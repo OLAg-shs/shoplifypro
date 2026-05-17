@@ -236,15 +236,65 @@ router.post('/v2/process-image', protect, authorize('seller'), async (req, res) 
     const imageFile = req.files.image;
     const imageData = fs.readFileSync(imageFile.tempFilePath);
 
-    let modelId = 'Zhengyi/RMBG-1.4'; // Non-gated community mirror
+    // ── ACTION 1: IMAGE UPSCALING / QUALITY ENHANCEMENT ────────────────
     if (action === 'upscale') {
-      modelId = 'stabilityai/stable-diffusion-x4-upscaler';
+      const replicateToken = process.env.REPLICATE_API_TOKEN;
+      if (!replicateToken || replicateToken === 'your_replicate_token_here') {
+        return res.status(400).json({ message: 'AI Upscaler is not configured (missing REPLICATE_API_TOKEN).' });
+      }
+
+      console.log(`[AI] Processing upscale using Replicate Real-ESRGAN...`);
+      const base64Image = `data:image/png;base64,${imageData.toString('base64')}`;
+
+      const axios = require('axios');
+      const createResponse = await axios.post(
+        'https://api.replicate.com/v1/predictions',
+        {
+          version: 'f121dda9daac3ad44d671f1894cf48f4b16a093c0886585cc03ca95513cf61d6', // Real-ESRGAN
+          input: {
+            image: base64Image,
+            scale: 2,
+            face_enhance: false
+          }
+        },
+        {
+          headers: {
+            Authorization: `Token ${replicateToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      let prediction = createResponse.data;
+      const predictionId = prediction.id;
+
+      // Poll up to 10 seconds inline (Real-ESRGAN is very fast)
+      let attempts = 0;
+      while (prediction.status !== 'succeeded' && prediction.status !== 'failed' && attempts < 10) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const statusResponse = await axios.get(
+          `https://api.replicate.com/v1/predictions/${predictionId}`,
+          {
+            headers: { Authorization: `Token ${replicateToken}` }
+          }
+        );
+        prediction = statusResponse.data;
+        attempts++;
+      }
+
+      if (prediction.status === 'succeeded') {
+        const outputUrl = prediction.output;
+        const upscaleResponse = await axios.get(outputUrl, { responseType: 'arraybuffer' });
+        console.log(`[AI] Upscale success! Returning enhanced image.`);
+        res.set('Content-Type', 'image/png');
+        return res.send(Buffer.from(upscaleResponse.data));
+      } else {
+        return res.status(500).json({ message: 'Upscaling failed on Replicate.', details: prediction.error });
+      }
     }
 
-    console.log(`[AI] Processing ${action} using model: ${modelId}...`);
-
-    // ── GRADIO STEALTH TUNNEL ──────────────────────────────────────────
-    // We connect to a public SPACE which is 100% free and has no 404 gates
+    // ── ACTION 2: BACKGROUND REMOVAL (GRADIO STEALTH TUNNEL) ─────────────
+    console.log(`[AI] Processing background removal via Gradio RMBG Space...`);
     const { Client } = require('@gradio/client');
     const hfKey = String(process.env.HUGGINGFACE_API_KEY || '').trim();
     
@@ -252,21 +302,16 @@ router.post('/v2/process-image', protect, authorize('seller'), async (req, res) 
         console.warn('[AI WARNING] HUGGINGFACE_API_KEY is missing. Tunnel may fail.');
     }
 
-    console.log(`[AI] Initializing Gradio Connection to Space: fffiloni/RMBG-1.4`);
-
-    // We use a high-availability public Space mirror
     const app = await Client.connect("fffiloni/RMBG-1.4", { hf_token: hfKey });
     const result = await app.predict("/predict", {
-		image: imageData,
+      image: imageData,
     });
 
-    // Gradio returns a URL or a file object. We fetch the data from it.
     const outputUrl = result.data[0].url;
     const axios = require('axios');
     const imageResponse = await axios.get(outputUrl, { responseType: 'arraybuffer' });
 
-    console.log(`[AI] Success! Processed via Gradio Tunnel.`);
-    
+    console.log(`[AI] Background removal success! Returning transparent PNG.`);
     res.set('Content-Type', 'image/png');
     res.send(Buffer.from(imageResponse.data));
   } catch (error) {
@@ -629,6 +674,118 @@ router.get('/assistant/greeting', protect, (req, res) => {
   const { route } = req.query;
   const greeting = SYSTEM_MAP.contextualGreetings[route] || "Hi! I'm your Eagle Choice AI assistant. Ask me anything about your store.";
   res.json({ greeting, availablePages: Object.keys(SYSTEM_MAP.routes) });
+});
+
+// @desc    Generate Unique AI Video Ad
+// @route   POST /api/ai/generate-video
+// @access  Private (Seller only)
+router.post('/generate-video', protect, authorize('seller'), async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt || prompt.trim() === '') {
+      return res.status(400).json({ message: 'Prompt is required for video generation.' });
+    }
+
+    const replicateToken = process.env.REPLICATE_API_TOKEN;
+    if (!replicateToken || replicateToken === 'your_replicate_token_here') {
+      return res.status(400).json({ message: 'AI Video Ad Generator is not configured (missing REPLICATE_API_TOKEN).' });
+    }
+
+    // 1. Fetch user to verify Pro status and credits
+    const { data: user, error: fetchError } = await supabase
+      .from('users')
+      .select('subscription_tier, ai_credits')
+      .eq('id', req.user.id)
+      .single();
+
+    if (fetchError || !user) {
+      return res.status(500).json({ message: 'Error checking user account details.' });
+    }
+
+    if (user.subscription_tier !== 'pro') {
+      return res.status(403).json({ message: 'Video Ad Generator is locked. Please upgrade to Eagle Choice Pro.', locked: true });
+    }
+
+    if (user.ai_credits < 5) {
+      return res.status(403).json({ message: 'You have run out of AI credits. (Each video costs 5 credits).', outOfCredits: true });
+    }
+
+    // 2. Deduct 5 credits immediately
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ ai_credits: user.ai_credits - 5 })
+      .eq('id', req.user.id);
+
+    if (updateError) {
+      return res.status(500).json({ message: 'Failed to process credit deduction.' });
+    }
+
+    console.log(`[AI VIDEO] Starting video generation for User ${req.user.id} (Deducted 5 credits). Prompt: ${prompt}`);
+
+    // 3. Initialize prediction on Replicate (LTX-Video)
+    const axios = require('axios');
+    const createResponse = await axios.post(
+      'https://api.replicate.com/v1/predictions',
+      {
+        version: '8c47da666861d081eeb4d1261853087de23923a268a69b63febdf5dc1dee08e4', // LTX-Video
+        input: {
+          prompt: prompt,
+          aspect_ratio: '16:9',
+          num_frames: 97 // Standard duration ~4s
+        }
+      },
+      {
+        headers: {
+          Authorization: `Token ${replicateToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    const prediction = createResponse.data;
+    res.json({
+      success: true,
+      prediction_id: prediction.id,
+      status: prediction.status,
+      message: 'Video generation initialized successfully.'
+    });
+
+  } catch (error) {
+    console.error('[AI VIDEO GEN ERROR]', error.response?.data || error.message);
+    res.status(500).json({ message: 'Failed to start video generation.', error: error.message });
+  }
+});
+
+// @desc    Check status of AI Video Ad Generation
+// @route   GET /api/ai/generate-video/status/:id
+// @access  Private (Seller only)
+router.get('/generate-video/status/:id', protect, authorize('seller'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const replicateToken = process.env.REPLICATE_API_TOKEN;
+    if (!replicateToken || replicateToken === 'your_replicate_token_here') {
+      return res.status(400).json({ message: 'AI Video Ad Generator is not configured (missing REPLICATE_API_TOKEN).' });
+    }
+
+    const axios = require('axios');
+    const response = await axios.get(`https://api.replicate.com/v1/predictions/${id}`, {
+      headers: { Authorization: `Token ${replicateToken}` }
+    });
+
+    const prediction = response.data;
+    const output = prediction.output;
+    const videoUrl = Array.isArray(output) ? output[0] : output;
+
+    res.json({
+      status: prediction.status,
+      video_url: videoUrl || null,
+      error: prediction.error || null
+    });
+
+  } catch (error) {
+    console.error('[AI VIDEO STATUS ERROR]', error.response?.data || error.message);
+    res.status(500).json({ message: 'Failed to check video status.', error: error.message });
+  }
 });
 
 module.exports = router;

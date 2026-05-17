@@ -9,23 +9,69 @@ const VideoAdGen = () => {
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isPro = user.subscription_tier === 'pro';
+  const [credits, setCredits] = useState(user.ai_credits || 0);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
     setIsGenerating(true);
     setError(null);
+    setVideoUrl(null);
+    
     try {
-      const res = await fetch('/api/ai/generate-video', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/ai/generate-video`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${localStorage.getItem('token')}` 
+        },
         body: JSON.stringify({ prompt }),
       });
+      
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Video generation failed');
-      setVideoUrl(data.video_url);
+      
+      const predictionId = data.prediction_id;
+      
+      // Start polling
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/ai/generate-video/status/${predictionId}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          });
+          
+          if (!statusRes.ok) {
+            clearInterval(pollInterval);
+            throw new Error('Failed to retrieve video generation status.');
+          }
+          
+          const statusData = await statusRes.json();
+          
+          if (statusData.status === 'succeeded') {
+            clearInterval(pollInterval);
+            setVideoUrl(statusData.video_url);
+            setIsGenerating(false);
+            
+            // Deduct locally for instant UI update
+            const newCredits = Math.max(0, credits - 5);
+            setCredits(newCredits);
+            const updatedUser = { ...user, ai_credits: newCredits };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+          } else if (statusData.status === 'failed') {
+            clearInterval(pollInterval);
+            setError(statusData.error || 'Video generation failed.');
+            setIsGenerating(false);
+          } else {
+            console.log(`[Video Gen Status]: ${statusData.status}`);
+          }
+        } catch (pollErr) {
+          clearInterval(pollInterval);
+          setError(pollErr.message);
+          setIsGenerating(false);
+        }
+      }, 3000); // Check every 3 seconds
+
     } catch (err) {
       setError(err.message);
-    } finally {
       setIsGenerating(false);
     }
   };
@@ -81,7 +127,7 @@ const VideoAdGen = () => {
           {/* Credit display */}
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <span style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.2)', color: '#a78bfa', padding: '6px 14px', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 700 }}>
-              ⚡ {user.ai_credits || 0} credits remaining (5 per video)
+              ⚡ {credits} credits remaining (5 per video)
             </span>
           </div>
 
@@ -107,7 +153,7 @@ const VideoAdGen = () => {
             </div>
           </div>
 
-          <button onClick={handleGenerate} disabled={isGenerating || !prompt.trim() || (user.ai_credits || 0) < 5}
+          <button onClick={handleGenerate} disabled={isGenerating || !prompt.trim() || credits < 5}
             style={{ padding: '1rem', background: 'linear-gradient(135deg,#7c3aed,#ec4899)', color: 'white', border: 'none', borderRadius: '14px', fontSize: '1.1rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', opacity: isGenerating ? 0.7 : 1 }}>
             {isGenerating ? <Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} /> : <Video size={22} />}
             {isGenerating ? 'Generating your video ad...' : 'Generate Video Ad (5 Credits)'}

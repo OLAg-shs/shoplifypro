@@ -103,6 +103,48 @@ const ProductStudio = () => {
     }
   };
 
+  const handleEnhanceQuality = async () => {
+    if (!processedUrl) return;
+    
+    setIsProcessing(true);
+    setIsError(false);
+    setStatus('Enhancing quality using HD Neural Brain...');
+
+    try {
+      const blobResponse = await fetch(processedUrl);
+      const blob = await blobResponse.blob();
+      
+      const formData = new FormData();
+      formData.append('image', blob, 'processed-product.png');
+      formData.append('action', 'upscale');
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/ai/v2/process-image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || 'Upscaling failed');
+      }
+
+      const enhancedBlob = await response.blob();
+      const newUrl = URL.createObjectURL(enhancedBlob);
+      setProcessedUrl(newUrl);
+      setStatus('✅ Image quality successfully enhanced!');
+      setTimeout(() => setStatus(''), 2000);
+    } catch (err) {
+      console.error('Enhancement failure:', err);
+      setIsError(true);
+      setStatus(err.message || 'Upscaling temporarily unavailable.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Helper to bake the background and image into a single Blob
   const createFinalImageBlob = async () => {
     if (!previewRef.current) return null;
@@ -344,6 +386,13 @@ const ProductStudio = () => {
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '1.5rem' }}>
             <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button 
+                onClick={handleEnhanceQuality}
+                disabled={!processedUrl || isProcessing}
+                style={{ padding: '14px', borderRadius: '12px', background: 'linear-gradient(135deg,#7c3aed,#ec4899)', color: 'white', border: 'none', fontWeight: 700, cursor: processedUrl ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: processedUrl ? 1 : 0.5 }}
+              >
+                <Sparkles size={18} /> Enhance Quality (HD)
+              </button>
               <button 
                 onClick={() => { setOriginalImage(null); setProcessedUrl(null); }}
                 style={{ padding: '14px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer' }}
